@@ -6,7 +6,7 @@ import reframe.core.launchers as lnr
 import reframe.utility.sanity as sn
 import reframe.utility.typecheck as typ
 
-from harness.build import SPEChpcBuild
+import harness
 
 def _benchmark_binary_name(benchmark_name: str) -> str:
     """
@@ -21,7 +21,7 @@ class HelloTest(rfm.RegressionTest):
     valid_systems = ["*"]
     valid_prog_environs = ["*"]
 
-    build_system = SPEChpcBuild()
+    build_system = harness.SPEChpcBuild()
     # todo: can we do this better?
     build_system.spechpc_dir = "/home/lilith/Developer/SPEChpc/hpc2021-1.1.7"
 
@@ -29,8 +29,6 @@ class HelloTest(rfm.RegressionTest):
 
     executable = _benchmark_binary_name(build_system.spechpc_benchmark)
     executable_opts = ["output6.test.txt", "2400", "1000", "750", "625", "1", "1", "6"]
-
-    perf_events = variable(typ.List[str], value=["power/energy-cores/", "power/energy-pkg/"])
 
     num_tasks = 12
 
@@ -41,8 +39,12 @@ class HelloTest(rfm.RegressionTest):
 
     @blt.run_before("run")
     def wrap_perf_events(self):
-        perf_args = ["stat"] + [f"-e \"{i}\"" for i in self.perf_events]
-        self.job.launcher = lnr.LauncherWrapper(self.job.launcher, "perf", perf_args)
+        self.job.launcher = harness.PerfLauncherWrapper(
+                self.job.launcher,
+                [harness.PerfEvents.power.energy_cores,
+                 harness.PerfEvents.power.pkg],
+                prefix = True
+        )
 
     @blt.performance_function("s", perf_key="Core Time")
     def extract_core_time(self):
