@@ -101,7 +101,7 @@ class SPEChpcBuild(BuildSystem):
             self.spechpc_dir, "benchspec", "HPC", self.spechpc_benchmark, "build"
         )
 
-    def _setup_spechpc(self) -> list[str]:
+    def _setup_spechpc(self) -> typ.List[str]:
         config_dir = os.path.join(self.spechpc_dir, "config")
 
         return [

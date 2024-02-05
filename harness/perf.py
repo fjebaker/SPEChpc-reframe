@@ -1,5 +1,7 @@
 from reframe.core.launchers import JobLauncher
 
+import reframe.utility.typecheck as typ
+
 
 class _Power:
     energy_cores = "power/energy-cores/"
@@ -16,7 +18,7 @@ class PerfLauncherWrapper(JobLauncher):
     launch command.
     """
 
-    def __init__(self, target_launcher, perf_events: list[str] = [], prefix=True):
+    def __init__(self, target_launcher, perf_events: typ.List[str] = [], prefix=True):
         super().__init__()
 
         self.perf_command = ["perf", "stat"]
