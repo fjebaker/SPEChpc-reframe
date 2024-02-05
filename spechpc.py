@@ -18,7 +18,7 @@ def _benchmark_binary_name(benchmark_name: str) -> str:
 
 
 @rfm.simple_test
-class HelloTest(rfm.RegressionTest):
+class SPEChpc(rfm.RegressionTest):
 
     valid_systems = ["*"]
     valid_prog_environs = ["*"]
