@@ -9,6 +9,7 @@ from reframe.core.exceptions import BuildSystemError
 GENERATED_CONFIG_NAME = "spechpc_config.cfg"
 GENERATED_CONFIG_IN = "spechpc_config.cfg.in"
 
+
 class SPEChpcBuild(BuildSystem):
     """
     Custom builder that wraps the `runhpc` and `specmake` command of `SPEChpc`.
@@ -42,8 +43,7 @@ class SPEChpcBuild(BuildSystem):
             )
         if not self.stagedir:
             raise BuildSystemError(
-                "Attribute `stagedir` has not been forwarded to the"
-                " build system."
+                "Attribute `stagedir` has not been forwarded to the" " build system."
             )
 
         # todo: this technically should have been passed but somehow not always
@@ -54,7 +54,6 @@ class SPEChpcBuild(BuildSystem):
                 " what the executable is called:"
                 " `build_system.executable = name`"
             )
-
 
     def _generate_spechpc_config(self, environ) -> str:
         """
@@ -75,17 +74,15 @@ class SPEChpcBuild(BuildSystem):
         # read the template
         content_in = pathlib.Path(config_path_in).read_text()
         content_out = (
-            content_in
-                .replace("${CC}", cc)
-                .replace("${CXX}", cxx)
-                .replace("${FC}", fcn)
-                .replace("${OPTIMIZE}", "-O2 -xHOST")
-         )
+            content_in.replace("${CC}", cc)
+            .replace("${CXX}", cxx)
+            .replace("${FC}", fcn)
+            .replace("${OPTIMIZE}", "-O2 -xHOST")
+        )
 
         # write the new content
         pathlib.Path(config_path_out).write_text(content_out)
         return config_path_out
-
 
     def _create_spechpc_build_command(self) -> str:
         cmd = ["runhpc"]
@@ -93,36 +90,38 @@ class SPEChpcBuild(BuildSystem):
         cmd += ["--size", "ref"]
         cmd += ["--tune", "base"]
         cmd += ["--config", self.spechpc_config]
-        cmd += ["--ranks", "8"] # todo: make sure this is the same number as at runtime
+        cmd += ["--ranks", "8"]  # todo: make sure this is the same number as at runtime
         cmd += [self.spechpc_benchmark]
         return " ".join(cmd)
 
     def _create_benchmark_build_dir(self) -> str:
-        return os.path.join(self.spechpc_dir, "benchspec", "HPC", self.spechpc_benchmark, "build")
+        return os.path.join(
+            self.spechpc_dir, "benchspec", "HPC", self.spechpc_benchmark, "build"
+        )
 
     def _setup_spechpc(self) -> list[str]:
         config_dir = os.path.join(self.spechpc_dir, "config")
 
         return [
             # copy over the configuration
-            f"cp \"{self.spechpc_config}\" \"{config_dir}\"",
+            f'cp "{self.spechpc_config}" "{config_dir}"',
             # change to the spechpc directory
-            f"cd \"{self.spechpc_dir}\"",
+            f'cd "{self.spechpc_dir}"',
             # source the requisite environment file
             "source shrc",
             # setup the build configuration
             self._create_spechpc_build_command(),
             # cd to the chosen benchmark directory
-            f"cd \"{self._create_benchmark_build_dir()}\"",
+            f'cd "{self._create_benchmark_build_dir()}"',
             # a little bit of cheek to get into the right directory
-            "BUILD_DIR=\"$(ls -d * | sort -n | head -n 1)\"",
-            "cd \"$BUILD_DIR\"",
+            'BUILD_DIR="$(ls -d * | sort -n | head -n 1)"',
+            'cd "$BUILD_DIR"',
             # do the build
             "specmake",
             # copy the binary back
-            f"cp \"{self.executable}\" \"{self.stagedir}\"",
+            f'cp "{self.executable}" "{self.stagedir}"',
             # finally, return to staging dir
-            f"cd \"{self.stagedir}\""
+            f'cd "{self.stagedir}"',
         ]
 
     def emit_build_commands(self, environ):

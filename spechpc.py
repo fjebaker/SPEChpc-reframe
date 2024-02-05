@@ -8,12 +8,14 @@ import reframe.utility.typecheck as typ
 
 import harness
 
+
 def _benchmark_binary_name(benchmark_name: str) -> str:
     """
     Get the benchmark binary name from the benchmark specification. E.g.,
     "635.weather_s" becomes "weather".
     """
     return os.path.join(".", benchmark_name.split(".")[1].split("_")[0])
+
 
 @rfm.simple_test
 class HelloTest(rfm.RegressionTest):
@@ -40,10 +42,9 @@ class HelloTest(rfm.RegressionTest):
     @blt.run_before("run")
     def wrap_perf_events(self):
         self.job.launcher = harness.PerfLauncherWrapper(
-                self.job.launcher,
-                [harness.PerfEvents.power.energy_cores,
-                 harness.PerfEvents.power.pkg],
-                prefix = True
+            self.job.launcher,
+            [harness.PerfEvents.power.energy_cores, harness.PerfEvents.power.pkg],
+            prefix=True,
         )
 
     @blt.performance_function("s", perf_key="Core Time")
@@ -61,4 +62,3 @@ class HelloTest(rfm.RegressionTest):
     @blt.sanity_function
     def assert_passed(self):
         return sn.assert_found(r"Verification: PASSED", self.spectimes_path)
-
