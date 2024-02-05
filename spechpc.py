@@ -41,11 +41,17 @@ class HelloTest(rfm.RegressionTest):
 
     @blt.run_before("run")
     def wrap_perf_events(self):
+
+        # use the perf wrapper
         self.job.launcher = harness.PerfLauncherWrapper(
             self.job.launcher,
             [harness.PerfEvents.power.energy_cores, harness.PerfEvents.power.pkg],
             prefix=True,
         )
+
+        if not self.executable_opts:
+            # read the executable args from the build directory
+            self.executable_opts = self.build_system.read_executable_opts()
 
     @blt.performance_function("s", perf_key="Core Time")
     def extract_core_time(self):

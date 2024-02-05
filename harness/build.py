@@ -8,6 +8,7 @@ from reframe.core.exceptions import BuildSystemError
 
 GENERATED_CONFIG_NAME = "spechpc_config.cfg"
 GENERATED_CONFIG_IN = "spechpc_config.cfg.in"
+CONTORL_FILENAME = "control"
 
 
 class SPEChpcBuild(BuildSystem):
@@ -24,6 +25,7 @@ class SPEChpcBuild(BuildSystem):
     spechpc_dir = variable(str, type(None), value=None)
     spechpc_config = variable(str, type(None), value=None)
     spechpc_benchmark = variable(str, value="635.weather_s")
+    spechpc_tune = variable(str, value="base")
     spechpc_flags = variable(typ.List[str], value=["--fake", "--loose"])
 
     """
@@ -88,7 +90,7 @@ class SPEChpcBuild(BuildSystem):
         cmd = ["runhpc"]
         cmd += self.spechpc_flags
         cmd += ["--size", "ref"]
-        cmd += ["--tune", "base"]
+        cmd += ["--tune", self.spechpc_tune]
         cmd += ["--config", self.spechpc_config]
         cmd += ["--ranks", "8"]  # todo: make sure this is the same number as at runtime
         cmd += [self.spechpc_benchmark]
@@ -116,10 +118,15 @@ class SPEChpcBuild(BuildSystem):
             # a little bit of cheek to get into the right directory
             'BUILD_DIR="$(ls -d * | sort -n | head -n 1)"',
             'cd "$BUILD_DIR"',
+            # save the identifier for later
+            "RUNID=$(basename $(pwd) | cut -d. -f2)",
             # do the build
             "specmake",
             # copy the binary back
             f'cp "{self.executable}" "{self.stagedir}"',
+            # copy the command specification back
+            f'cd "../../run/run_{self.spechpc_tune}_ref_intel_mpi.$RUNID"',
+            f'cp "{CONTORL_FILENAME}" "{self.stagedir}"',
             # finally, return to staging dir
             f'cd "{self.stagedir}"',
         ]
@@ -131,3 +138,11 @@ class SPEChpcBuild(BuildSystem):
             self.spechpc_config = self._generate_spechpc_config(environ)
 
         return self._setup_spechpc()
+
+    def read_executable_opts(self) -> typ.List[str]:
+        """
+        Reads the executable's default arguments from the SPEChpc generated
+        control file.
+        """
+        cmdpath = os.path.join(self.stagedir, CONTORL_FILENAME)
+        return pathlib.Path(cmdpath).read_text().split()
