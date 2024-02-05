@@ -1,0 +1,139 @@
+#!/bin/bash
+######################################################################
+# Example configuration file for the Intel 2020 Compilers
+#
+# Defines: "model" => "mpi", "omp", default "mpi"
+#          "label" => ext base label, default "intel"
+#
+# MPI-only Command:
+# runhpc -c Example_intel --reportable -I -l -n 1 -T base -i test,ref --define model=mpi --ranks=72 tiny
+#
+# OpenMP Command:
+# runhpc -c Example_intel --reportable -I -l -n 1 -T base -i test,ref --define pmodel=omp --threads=8 --ranks=4 tiny
+#
+#######################################################################
+allow_label_override = yes  # label controls srcalt: simd - for simd
+build_in_build_dir=0        # build in run dir
+
+strict_rundir_verify = 0
+%ifndef %{label}         # IF acctype is not set use mpi
+%   define label intel
+%endif
+
+%ifndef %{model}         # IF model is not set use mpi
+%   define model mpi
+pmodel = MPI
+%endif
+
+
+teeout = yes
+makeflags=-j
+
+######################################################
+# SUT Section
+######################################################
+include: Example_SUT.inc
+
+
+# System Description
+hw_model           = Intel Server
+hw_memory          = 9999 GB
+hw_disk            = 9999 GB Brand X SCSI disk 9999K rpm
+hw_vendor          = Intel
+hw_other           = None
+
+# CPU description
+hw_cpu_name        = Intel Chip Model
+hw_nchips          = 9999
+hw_ncores          = 9999
+hw_nthreadspercore = 9999
+hw_ncpuorder       = 1 to 9999 chips
+
+# Cache description
+hw_pcache          = 9999 MB I + 9999 MB D on chip per chip
+hw_scache          = 9999 MB I+D on chip per chip
+hw_tcache          = 9999 MB I+D off chip per chip
+hw_ocache          = None
+
+# Tester description
+license_num     = 9999
+test_sponsor    = Sponsor Name
+tester          = Testing Company Name
+
+# Operating system, file system
+sw_os           = Computer System Unix Version YYY
+sw_file         = TurboLogging File System
+sw_state        = Multi-user
+sw_other        = None
+
+#######################################################################
+# End of SUT section
+# If this config file were to be applied to several SUTs, edits would
+# be needed only ABOVE this point.
+######################################################################
+
+######################################################################
+# The header section of the config file.  Must appear
+# before any instances of "section markers" (see below)
+#
+# ext = how the binaries you generated will be identified
+# tune = specify "base" or "peak" or "all"
+
+label         = %{label}_%{model}
+tune          = base
+output_format = text
+use_submit_for_speed = 1
+
+default:
+AR           = ar
+ARFLAGS      = cr
+CC           = ${CC}
+CXX          = ${CXX}
+FC           = ${FC}
+sw_compiler  = Intel Parallel Studio 2020
+
+hw_avail     = Dec-9999
+sw_avail     = Dec-9999
+
+CC_VERSION_OPTION  = --version
+CXX_VERSION_OPTION = --version
+FC_VERSION_OPTION  = --version
+
+mpicmd = mpiexec.hydra -np $ranks $command
+submit = $mpicmd
+
+
+#######################################################################
+# Optimization
+
+# Note that SPEC baseline rules require that all uses of a given compiler
+# use the same flags in the same order. See the SPEChpc Run Rules
+# for more details
+#      http://www.spec.org/hpc2021/Docs/runrules.html
+#
+# OPTIMIZE    = flags applicable to all compilers
+# COPTIMIZE   = flags appliable to the C compiler
+# CXXOPTIMIZE = flags appliable to the C++ compiler
+# FOPTIMIZE   = flags appliable to the Fortran compiler
+#
+# See your compiler manual for information on the flags available
+# for your compiler
+
+
+
+default=base=default:
+OPTIMIZE      = ${OPTIMIZE}
+COPTIMIZE     = -ansi-alias
+CXXOPTIMIZE   = -ansi-alias
+PORTABILITY = -DSPEC_LP64
+
+%if %{model} eq 'omp'
+  pmodel=OMP
+  OPTIMIZE += -qopenmp
+%endif
+
+513.soma_t:
+PORTABILITY+=-DSPEC_NO_VAR_ARRAY_REDUCE
+
+default=peak=default:
+basepeak=1
