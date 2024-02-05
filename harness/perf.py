@@ -5,7 +5,8 @@ import reframe.utility.typecheck as typ
 
 class _Power:
     energy_cores = "power/energy-cores/"
-    pkg = "power/energy-pkg/"
+    energy_pkg = "power/energy-pkg/"
+    energy_ram = "power/energy-ram/"
 
 
 class PerfEvents:

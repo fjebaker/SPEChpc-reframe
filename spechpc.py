@@ -24,8 +24,14 @@ class SPEChpc(rfm.RegressionTest):
     valid_prog_environs = ["*"]
 
     build_system = harness.SPEChpcBuild()
+
     # todo: can we do this better?
     build_system.spechpc_dir = "/home/lilith/Developer/SPEChpc/hpc2021-1.1.7"
+    # todo: this depends on the system. can we add it to the environ?
+    perf_events = [
+        harness.PerfEvents.power.energy_cores,
+        harness.PerfEvents.power.energy_pkg,
+    ]
 
     spectimes_path = variable(str, type(None), value="spectimes.txt")
 
@@ -45,7 +51,7 @@ class SPEChpc(rfm.RegressionTest):
         # use the perf wrapper
         self.job.launcher = harness.PerfLauncherWrapper(
             self.job.launcher,
-            [harness.PerfEvents.power.energy_cores, harness.PerfEvents.power.pkg],
+            self.perf_events,
             prefix=True,
         )
 
