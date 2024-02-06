@@ -73,12 +73,21 @@ class SPEChpc(rfm.RegressionTest):
             self.executable_opts = self.build_system.read_executable_opts()
 
     @blt.performance_function("J")
-    def extract_perf_energy_event(self, key=None):
+    def extract_perf_energy_event(self, key=None, socket=0):
         if not key:
             raise ValueError("`key` has no value")
-        return sn.extractsingle(
-            rf"(\S+) \w+ {key}", self.stderr, 1, lambda x: float(x.replace(",", "_"))
+
+        if socket < 0:
+            raise ValueError("`socket` cannot be negative")
+
+        all_measurements = sn.extractall(
+            rf"S{socket}\s+\d+\s+(\S+) \w+ {key}",
+            self.stderr,
+            1,
+            lambda x: float(x.replace(",", "_")),
         )
+
+        return sum(all_measurements)
 
     @blt.performance_function("s")
     def extract_core_time(self):
@@ -88,7 +97,9 @@ class SPEChpc(rfm.RegressionTest):
     def set_performance_variables(self):
         # build the selected perf events dictionary
         perf_events_gather = {
-            k: self.extract_perf_energy_event(k) for k in self.perf_events
+            f"Socket {socket}: {k}": self.extract_perf_energy_event(k, socket)
+            for k in self.perf_events
+            for socket in range(self.current_partition.processor.num_sockets)
         }
 
         # get the pdu measurements
