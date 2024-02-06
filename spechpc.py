@@ -68,7 +68,9 @@ class SPEChpc(rfm.RegressionTest):
     def extract_perf_energy_event(self, key=None):
         if not key:
             raise ValueError("`key` has no value")
-        return sn.extractsingle(rf"(\S+) \w+ {key}", self.stderr, 1, float)
+        return sn.extractsingle(
+            rf"(\S+) \w+ {key}", self.stderr, 1, lambda x: float(x.replace(",", "_"))
+        )
 
     @blt.performance_function("s")
     def extract_core_time(self):
