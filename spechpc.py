@@ -34,7 +34,7 @@ class SPEChpc(rfm.RegressionTest):
         harness.PerfEvents.power.energy_pkg,
     ]
 
-    spectimes_path = variable(str, type(None), value="spectimes.txt")
+    spectimes_path = "spectimes.txt"
 
     executable = _benchmark_binary_name(build_system.spechpc_benchmark)
     executable_opts = ["output6.test.txt", "2400", "1000", "750", "625", "1", "1", "6"]
