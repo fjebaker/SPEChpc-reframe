@@ -1,7 +1,5 @@
-import os
-import requests
-
 import logging
+import os
 
 import reframe as rfm
 import reframe.core.builtins as blt
@@ -11,11 +9,6 @@ import harness
 
 logger = logging.getLogger(__name__)
 
-# check the database endpoint is set
-SRFM_PROMETHEUS_ADDRESS = os.environ.get("SRFM_PROMETHEUS_ADDRESS", None)
-
-if not SRFM_PROMETHEUS_ADDRESS:
-    logger.warn("No SRFM_PROMETHEUS_ADDRESS given. Cannot fetch PDU measurement estimate.")
 
 def _benchmark_binary_name(benchmark_name: str) -> str:
     """
@@ -24,42 +17,6 @@ def _benchmark_binary_name(benchmark_name: str) -> str:
     """
     return os.path.join(".", benchmark_name.split(".")[1].split("_")[0])
 
-def _construct_pdu_query_chasis(jobname, jobtime):
-    # todo: this query is hyper specific to the setup, and should ideally be
-    # more flexible
-    query_string = "query"
-    query_string += (
-        'sum(integrate(measurementsOutletSensorSignedValue'
-        '{job="' + jobname + '",sensorType="activePower",'
-        'instance_name=~"PDU-B-FR06|PDU-A-FR06",outletId="22"}'
-        '[\'' + jobtime + '\'s]))'
-    )
-    return query_string
-
-def _construct_pdu_query_node(jobname, cluster, hostname):
-    query_string = "query"
-    query_string += (
-             'amperageProbeReading{job="' + jobname + '", '
-             'amperageProbeLocationName="System Board Pwr Consumption", '
-             'cluster="' + cluster + '", alias="' + hostname + '"}'
-    )
-    return query_string
-
-def _fetch_pdu_measurement(jobname, cluster=None, jobtime=None, hostname=None):
-    headers = {
-    'Content-Type': 'application/x-www-form-urlencoded',
-    }
-
-    if jobtime:
-        query_string = _construct_pdu_query_chasis(jobname, jobtime)
-    elif cluster and hostname:
-        query_string = _construct_pdu_query_node(jobname, cluster, hostname)
-    else:
-        logger.error("Cannot determine PDU query to fetch with")
-        raise ValueError("`jobtime` or `cluster` and `hostname` must be passed as arguments")
-
-    response = requests.post(f"http://{SRFM_PROMETHEUS_ADDRESS}/prometheus/api/v1/query", headers=headers, data=query_string)
-    return response.content
 
 @rfm.simple_test
 class SPEChpc(rfm.RegressionTest):
@@ -121,25 +78,15 @@ class SPEChpc(rfm.RegressionTest):
             k: self.extract_perf_energy_event(k) for k in self.perf_events
         }
 
+        # get the pdu measurements
+        database_gather = harness.fetch_pdu_measurements("jobname", 1)
+
         self.perf_variables = {
             **perf_events_gather,
+            **database_gather,
+            # add other measurements that are always available
             "Core time": self.extract_core_time(),
         }
-
-        if SRFM_PROMETHEUS_ADDRESS:
-            # todo: get the jobname and jobtime from the scheduler
-            self.perf_variables["Energy PDU"] = self.fetch_pdu_measurements("some-job", 1)
-
-    @blt.performance_function("J")
-    def fetch_pdu_measurements(self, jobname=None, jobtime=None):
-        # why do i need to give them default values??? the interpreter does
-        # this for me
-        if not jobname:
-            raise ValueError("`jobname` has no value")
-        if not jobtime:
-            raise ValueError("`jobtime` has no value")
-
-        return _fetch_pdu_measurement(jobname, jobtime=jobtime)
 
     @blt.sanity_function
     def assert_passed(self):
