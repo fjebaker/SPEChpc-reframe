@@ -43,16 +43,15 @@ class SPEChpc(rfm.RegressionTest):
 
     @blt.run_before("compile")
     def set_build_variables(self):
+        self.num_tasks = self.current_partition.processor.num_cpus
+        # build system needs some additional info that reframe doesnt pass by
+        # default
+        self.build_system.spechpc_num_ranks = self.num_tasks
         self.build_system.executable = self.executable
         self.build_system.stagedir = self.stagedir
 
     @blt.run_before("run")
-    def set_num_tasks(self):
-        self.num_tasks = self.current_partition.processor.num_cpus
-
-    @blt.run_before("run")
     def wrap_perf_events(self):
-
         # use the perf wrapper only if we're measuring perf events
         if self.perf_events:
             self.job.launcher = harness.PerfLauncherWrapper(

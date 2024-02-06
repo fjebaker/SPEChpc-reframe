@@ -27,9 +27,10 @@ class SPEChpcBuild(BuildSystem):
     # spechpc specifics
     spechpc_dir = variable(str, type(None), value=None)
     spechpc_config = variable(str, type(None), value=None)
-    spechpc_benchmark = variable(str, value="635.weather_s")
+    spechpc_num_ranks = variable(int, type(None), value=None)
     spechpc_tune = variable(str, value="base")
     spechpc_flags = variable(typ.List[str], value=["--fake", "--loose"])
+    spechpc_benchmark = variable(str, value="635.weather_s")
 
     """
     The absolute path of the stage directory. Must be set before the compile
@@ -50,6 +51,12 @@ class SPEChpcBuild(BuildSystem):
             raise BuildSystemError(
                 "Attribute `stagedir` has not been forwarded to the" " build system."
             )
+
+        if not self.spechpc_num_ranks:
+            raise BuildSystemError(
+                "Number of ranks not known by the build system. Ensure `spechpc_num_ranks` is set"
+            )
+
 
         # todo: this technically should have been passed but somehow not always
         if not self.executable:
@@ -95,7 +102,7 @@ class SPEChpcBuild(BuildSystem):
         cmd += ["--size", "ref"]
         cmd += ["--tune", self.spechpc_tune]
         cmd += ["--config", self.spechpc_config]
-        cmd += ["--ranks", "8"]  # todo: make sure this is the same number as at runtime
+        cmd += ["--ranks", str(self.spechpc_num_ranks)]
         cmd += [self.spechpc_benchmark]
         return " ".join(cmd)
 
