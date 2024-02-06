@@ -94,7 +94,7 @@ class SPEChpc(rfm.RegressionTest):
     def set_performance_variables(self):
         # build the selected perf events dictionary
         perf_events_gather = {
-            f"Socket {socket}: {k}": self.extract_perf_energy_event(k, socket)
+            f"{socket}/{k}": self.extract_perf_energy_event(k, socket)
             for k in self.perf_events
             for socket in range(self.current_partition.processor.num_sockets)
         }
