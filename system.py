@@ -1,3 +1,6 @@
+# configuration for CSD3
+# modified from https://github.com/ukri-excalibur/excalibur-tests/blob/main/benchmarks/reframe_config.py
+
 ICELAKE_PROC = {
     "num_cpus": 76,
     "num_cpus_per_core": 1,
