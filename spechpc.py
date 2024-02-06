@@ -1,14 +1,11 @@
 import os
-import time
 import requests
 
 import logging
 
 import reframe as rfm
 import reframe.core.builtins as blt
-import reframe.core.launchers as lnr
 import reframe.utility.sanity as sn
-import reframe.utility.typecheck as typ
 
 import harness
 
@@ -74,12 +71,13 @@ class SPEChpc(rfm.RegressionTest):
     @blt.run_before("run")
     def wrap_perf_events(self):
 
-        # use the perf wrapper
-        self.job.launcher = harness.PerfLauncherWrapper(
-            self.job.launcher,
-            self.perf_events,
-            prefix=True,
-        )
+        # use the perf wrapper only if we're measuring perf events
+        if self.perf_events:
+            self.job.launcher = harness.PerfLauncherWrapper(
+                self.job.launcher,
+                self.perf_events,
+                prefix=True,
+            )
 
         if not self.executable_opts:
             # read the executable args from the build directory
