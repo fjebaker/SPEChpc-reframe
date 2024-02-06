@@ -1,0 +1,17 @@
+diff --git a/reframe/frontend/executors/policies.py b/reframe/frontend/executors/policies.py
+index 6a33544a..d0dc5c2f 100644
+--- a/reframe/frontend/executors/policies.py
++++ b/reframe/frontend/executors/policies.py
+@@ -30,9 +30,9 @@ def _cleanup_all(tasks, *args, **kwargs):
+
+
+ class _PollController:
+-    SLEEP_MIN = 0.1
+-    SLEEP_MAX = 10
+-    SLEEP_INC_RATE = 1.1
++    SLEEP_MIN = 10
++    SLEEP_MAX = 240
++    SLEEP_INC_RATE = 1.2
+
+     def __init__(self):
+         self._num_polls = 0
