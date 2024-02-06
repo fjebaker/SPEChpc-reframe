@@ -34,10 +34,7 @@ class SPEChpc(rfm.RegressionTest):
 
     build_system = harness.SPEChpcBuild()
 
-    modules = [
-        "rhel8/default-icl",
-        "intel-oneapi-mkl/2022.1.0/intel/mngj3ad6"
-    ]
+    modules = ["rhel8/default-icl", "intel-oneapi-mkl/2022.1.0/intel/mngj3ad6"]
 
     # todo: can we do this better?
     build_system.spechpc_dir = "/home/lilith/Developer/SPEChpc/hpc2021-1.1.7"

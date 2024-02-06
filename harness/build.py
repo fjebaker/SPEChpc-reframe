@@ -57,7 +57,6 @@ class SPEChpcBuild(BuildSystem):
                 "Number of ranks not known by the build system. Ensure `spechpc_num_ranks` is set"
             )
 
-
         # todo: this technically should have been passed but somehow not always
         if not self.executable:
             raise BuildSystemError(
