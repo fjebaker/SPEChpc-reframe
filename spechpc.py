@@ -24,7 +24,7 @@ class SPEChpc(rfm.RegressionTest):
     valid_systems = ["*"]
     valid_prog_environs = ["*"]
 
-    spechpc_benchmark = variable(str, value="535.weather_s")
+    spechpc_benchmark = variable(str, value="635.weather_s")
 
     # todo: this depends on the system. can we add it to the environ?
     perf_events = [
