@@ -1,10 +1,13 @@
 import os
+import logging
 import pathlib
 
 import reframe.utility.typecheck as typ
 
 from reframe.core.buildsystems import BuildSystem
 from reframe.core.exceptions import BuildSystemError
+
+logger = logging.getLogger(__name__)
 
 GENERATED_CONFIG_NAME = "spechpc_config.cfg"
 GENERATED_CONFIG_IN = "spechpc_config.cfg.in"
@@ -135,6 +138,7 @@ class SPEChpcBuild(BuildSystem):
         self._check_preconditions()
 
         if not self.spechpc_config:
+            logger.debug("Generating SPEChpc configuration from system environment")
             self.spechpc_config = self._generate_spechpc_config(environ)
 
         return self._setup_spechpc()
@@ -145,4 +149,5 @@ class SPEChpcBuild(BuildSystem):
         control file.
         """
         cmdpath = os.path.join(self.stagedir, CONTORL_FILENAME)
+        logger.debug("Reading SPEChpc benchmark arguments from file: %s", cmdpath)
         return pathlib.Path(cmdpath).read_text().split()

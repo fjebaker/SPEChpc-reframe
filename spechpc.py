@@ -1,4 +1,5 @@
 import os
+import logging
 
 import reframe as rfm
 import reframe.core.builtins as blt
@@ -8,6 +9,7 @@ import reframe.utility.typecheck as typ
 
 import harness
 
+logger = logging.getLogger(__name__)
 
 def _benchmark_binary_name(benchmark_name: str) -> str:
     """
