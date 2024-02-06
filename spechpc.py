@@ -39,12 +39,16 @@ class SPEChpc(rfm.RegressionTest):
     executable = _benchmark_binary_name(build_system.spechpc_benchmark)
     executable_opts = ["output6.test.txt", "2400", "1000", "750", "625", "1", "1", "6"]
 
-    num_tasks = 12
+    num_nodes = 1
 
     @blt.run_before("compile")
     def set_build_variables(self):
         self.build_system.executable = self.executable
         self.build_system.stagedir = self.stagedir
+
+    @blt.run_before("run")
+    def set_num_tasks(self):
+        self.num_tasks = self.current_partition.processor.num_cpus
 
     @blt.run_before("run")
     def wrap_perf_events(self):
