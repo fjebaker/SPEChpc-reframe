@@ -24,19 +24,26 @@ class SPEChpc(rfm.RegressionTest):
     valid_systems = ["*"]
     valid_prog_environs = ["*"]
 
-    build_system = harness.SPEChpcBuild()
+    spechpc_benchmark = variable(str, value="535.weather_s")
 
-    # todo: can we do this better?
-    build_system.spechpc_dir = "/home/lilith/Developer/SPEChpc/hpc2021-1.1.7"
     # todo: this depends on the system. can we add it to the environ?
     perf_events = [
         harness.PerfEvents.power.energy_cores,
         harness.PerfEvents.power.energy_pkg,
     ]
 
-    spectimes_path = "spectimes.txt"
+    build_system = harness.SPEChpcBuild()
 
-    executable = _benchmark_binary_name(build_system.spechpc_benchmark)
+    modules = [
+        "rhel8/default-icl",
+        "intel-oneapi-mkl/2022.1.0/intel/mngj3ad6"
+    ]
+
+    # todo: can we do this better?
+    build_system.spechpc_dir = "/home/lilith/Developer/SPEChpc/hpc2021-1.1.7"
+
+    spectimes_path = "spectimes.txt"
+    executable = _benchmark_binary_name(spechpc_benchmark)
     executable_opts = ["output6.test.txt", "2400", "1000", "750", "625", "1", "1", "6"]
 
     num_nodes = 1
@@ -49,6 +56,7 @@ class SPEChpc(rfm.RegressionTest):
         self.build_system.spechpc_num_ranks = self.num_tasks
         self.build_system.executable = self.executable
         self.build_system.stagedir = self.stagedir
+        self.build_system.spechpc_benchmark = self.spechpc_benchmark
 
     @blt.run_before("run")
     def wrap_perf_events(self):
