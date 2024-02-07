@@ -22,14 +22,7 @@ def make_partition(name, descr, proc):
         "descr": descr,
         "scheduler": "slurm",
         "launcher": "mpirun",
-        "env_vars": [
-            [
-                "I_MPI_PMI_LIBRARY",
-                "/usr/local/software/slurm/current-rhel8/lib/libpmi2.so",
-            ],
-            ["I_MPI_OFI_PROVIDER", "mlx"],
-            ["UCX_NET_DEVICES", "mlx5_0:1"],
-        ],
+        "env_vars": [],
         "access": ["--partition=" + name, "--exclusive"],
         "sched_options": {
             "job_submit_timeout": 120,
