@@ -133,8 +133,10 @@ class SPEChpc(rfm.RegressionTest):
 
         # save all measurements to the time series dictionary
         self.time_series[f"perf/{socket}/{key}"] = [
-            all_time_measurements,
-            all_energy_measurements,
+            # explicitly call list, as the `_extract_perf_values` returns
+            # reframe deferrables
+            list(all_time_measurements),
+            list(all_energy_measurements),
         ]
 
         # return the summed energy
