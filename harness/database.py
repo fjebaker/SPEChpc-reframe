@@ -87,7 +87,7 @@ def _make_pdu_query(
         return np.zeros((1, 2), dtype=np.float64)
     else:
         response = requests.post(
-            f"http://{SRFM_PROMETHEUS_ADDRESS}/prometheus/api/v1/query",
+            f"http://{SRFM_PROMETHEUS_ADDRESS}/api/v1/query_range",
             headers=headers,
             data=data,
         )
