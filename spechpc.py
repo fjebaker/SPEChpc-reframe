@@ -46,12 +46,17 @@ class SPEChpc(rfm.RegressionTest):
 
     num_nodes = 1
 
+    # database specifics
     database_query_start_date = variable(datetime.datetime, type(None), value=None)
     database_query_end_date = variable(datetime.datetime, type(None), value=None)
+    database_query_node_name = variable(str, type(None), value=None)
 
     @blt.run_before("compile")
     def set_build_variables(self):
+        # learn things about the partition we're running on
         self.num_tasks = self.current_partition.processor.num_cpus
+        self.partition_name = self.current_partition.name
+
         # build system needs some additional info that reframe doesnt pass by
         # default
         self.build_system.spechpc_num_ranks = self.num_tasks
@@ -76,13 +81,15 @@ class SPEChpc(rfm.RegressionTest):
         # for the database query, need a rough estimate of when to start query
         self.database_query_start_date = harness.get_query_time(start=True)
 
-        # we also need to know about the machine we are running on
-        self.cluster_name = self.current_partition.name
-        self.node_name = self.current_system.hostnames[0]
-
     @blt.run_after("run")
     def set_database_end_time(self):
         self.database_query_end_date = harness.get_query_time(start=False)
+
+        # after the run we ask the job where it ran
+        if self.job.nodelist:
+            self.database_query_node_name = self.job.nodelist[0]
+        else:
+            logger.warn("No nodelists set by scheduler. Cannot query database")
 
     @blt.performance_function("J")
     def extract_perf_energy_event(self, key=None, socket=0):
@@ -118,8 +125,8 @@ class SPEChpc(rfm.RegressionTest):
         database_gather = harness.fetch_pdu_measurements(
             self.database_query_start_date,
             self.database_query_end_date,
-            self.cluster_name,
-            self.node_name,
+            self.partition_name,
+            self.database_query_node_name,
         )
 
         self.perf_variables = {

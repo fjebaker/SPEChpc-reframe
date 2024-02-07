@@ -97,10 +97,9 @@ def fetch_pdu_measurements(
     start_time: datetime.datetime,
     end_time: datetime.datetime,
     cluster: str,
-    nodename: str,
+    nodename: str | None,
 ) -> dict:
-    if DATABASE_QUERY_ENABLED:
-        # todo: get the jobname and jobtime etc from the scheduler
+    if DATABASE_QUERY_ENABLED and nodename:
         return {
             f"Energy PDU {nodename}": sn.make_performance_function(
                 _make_pdu_query,
@@ -111,5 +110,4 @@ def fetch_pdu_measurements(
                 nodename,
             )
         }
-
     return {}
