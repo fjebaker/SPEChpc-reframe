@@ -83,6 +83,10 @@ class SPEChpc(rfm.RegressionTest):
         # get a rough start time estimate. may be refined later
         self.job_start_time = utils.time_now(True)
 
+        # todo: there must be a better / more idiomatic way to do this
+        # i would have thought reframe would have done this automatically
+        self.job.options.append(f"--nodes={self.num_nodes}")
+
     @blt.run_after("run")
     def set_database_end_time(self):
         # for the database query, need a rough estimate of when to start query
