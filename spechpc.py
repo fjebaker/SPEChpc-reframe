@@ -11,6 +11,16 @@ import harness
 logger = logging.getLogger(__name__)
 
 
+SPECHPC_ROOT_LOOKUP = {
+    "personal": "/home/lilith/Developer/SPEChpc/hpc2021-1.1.7",
+    "csd3-fergus": "/rds/user/fb609/hpc-work/SPEChpc/hpc2021-1.1.7",
+}
+
+
+def _lookup_spechpc_root_dir(cluster_name: str) -> str:
+    return SPECHPC_ROOT_LOOKUP[cluster_name]
+
+
 def _benchmark_binary_name(benchmark_name: str) -> str:
     """
     Get the benchmark binary name from the benchmark specification. E.g.,
@@ -26,6 +36,7 @@ class SPEChpc(rfm.RegressionTest):
     valid_prog_environs = ["*"]
 
     spechpc_benchmark = variable(str, value="635.weather_s")
+    spechpc_dir = variable(str, type(None), value=None)
 
     # todo: this depends on the system. can we add it to the environ?
     perf_events = [
@@ -36,9 +47,6 @@ class SPEChpc(rfm.RegressionTest):
     build_system = harness.SPEChpcBuild()
 
     modules = ["rhel8/default-icl", "intel-oneapi-mkl/2022.1.0/intel/mngj3ad6"]
-
-    # todo: can we do this better?
-    build_system.spechpc_dir = "/home/lilith/Developer/SPEChpc/hpc2021-1.1.7"
 
     spectimes_path = "spectimes.txt"
     executable = _benchmark_binary_name(spechpc_benchmark)
@@ -57,8 +65,12 @@ class SPEChpc(rfm.RegressionTest):
         self.num_tasks = self.current_partition.processor.num_cpus
         self.partition_name = self.current_partition.name
 
+        if not self.spechpc_dir:
+            self.spechpc_dir = _lookup_spechpc_root_dir(self.current_system.name)
+
         # build system needs some additional info that reframe doesnt pass by
         # default
+        self.build_system.spechpc_dir = self.spechpc_dir
         self.build_system.spechpc_num_ranks = self.num_tasks
         self.build_system.executable = self.executable
         self.build_system.stagedir = self.stagedir
