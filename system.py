@@ -16,16 +16,37 @@ SAPPHIRE_RAPID_PROC = {
 }
 
 
-def make_partition(name, descr, proc):
+def _make_access(account, reservation, nodelist):
+    return [
+        "--reservation=" + reservation,
+        "--account=" + account,
+        "--nodelist=" + nodelist,
+    ]
+
+
+def power_scaling_access(reservation, nodelist):
+    return _make_access("SUPPORT-CPU", reservation, nodelist)
+
+
+def geopm_access(reservation, nodelist):
+    return _make_access("ZETTASCALE-ENERGY-SL2-CPU", reservation, nodelist)
+
+
+def make_partition(name, descr, proc, access):
     return {
         "name": name,
         "descr": descr,
         "scheduler": "slurm",
         "launcher": "mpirun",
         "env_vars": [],
-        "access": ["--partition=" + name, "--exclusive"],
+        "access": [
+            "--partition=" + name,
+            "--exclusive",
+            *access,
+        ],
         "sched_options": {
             "job_submit_timeout": 120,
+            "use_nodes_options": True,
         },
         "environs": ["gcc", "intel"],
         "max_jobs": 64,
@@ -41,10 +62,40 @@ site_configuration = {
             "hostnames": ["login-q-1"],
             "modules_system": "tmod4",
             "partitions": [
-                make_partition("icelake", "", ICELAKE_PROC),
-                make_partition("sapphire", "", SAPPHIRE_RAPID_PROC),
+                make_partition(
+                    "icelake",
+                    "",
+                    ICELAKE_PROC,
+                    power_scaling_access("downclock-perf-testing-1", "cpu-q-[3,4]"),
+                ),
+                make_partition(
+                    "sapphire",
+                    "",
+                    SAPPHIRE_RAPID_PROC,
+                    power_scaling_access("downclock-perf-testing-2", "cpu-r-[3,4]"),
+                ),
             ],
-        }
+        },
+        {
+            "name": "csd3-geopm",
+            "descr": "",
+            "hostnames": ["login-q-1"],
+            "modules_system": "tmod4",
+            "partitions": [
+                make_partition(
+                    "icelake",
+                    "",
+                    ICELAKE_PROC,
+                    geopm_access("geopm_i_ZL-451", "cpu-q-607"),
+                ),
+                make_partition(
+                    "sapphire",
+                    "",
+                    SAPPHIRE_RAPID_PROC,
+                    geopm_access("geopm_s_ZL-451", "cpu-r-110"),
+                ),
+            ],
+        },
     ],
     "environments": [
         {
