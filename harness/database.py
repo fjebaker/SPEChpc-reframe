@@ -51,13 +51,18 @@ def _digest_result(data: dict) -> np.array:
 
     return np.array(data["data"]["result"][0]["values"], dtype=np.float64)
 
+CLUSTER_LOOKUP = {
+    "sapphire": "Sapphire Rapid",
+}
 
 def _construct_pdu_query_node(cluster: str, nodename: str):
+    # cluster name is capitalized in the database, so we make sure it is here too
+    # for some others it has a special string so assert that with a lookup
+    cluster_name = CLUSTER_LOOKUP.get(cluster, cluster.title())
     return (
         'amperageProbeReading{job="snmp_bmc", '
         'amperageProbeLocationName="System Board Pwr Consumption", '
-        # cluster name is capitalized in the database, so we make sure it is here too
-        'cluster="' + cluster.title() + '", alias="' + nodename + '"}'
+        'cluster="' + cluster_name + '", alias="' + nodename + '"}'
     )
 
 
