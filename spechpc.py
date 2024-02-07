@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 SPECHPC_ROOT_LOOKUP = {
     "personal": "/home/lilith/Developer/SPEChpc/hpc2021-1.1.7",
-    "csd3-fergus": "/rds/user/fb609/hpc-work/SPEChpc/hpc2021-1.1.7",
+    "csd3-power-scaling": "/rds/user/fb609/hpc-work/SPEChpc/hpc2021-1.1.7",
 }
 
 

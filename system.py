@@ -36,7 +36,7 @@ def make_partition(name, descr, proc):
 site_configuration = {
     "systems": [
         {
-            "name": "GEOPM-reservation",
+            "name": "csd3-power-scaling",
             "descr": "",
             "hostnames": ["login-q-1"],
             "modules_system": "tmod4",
