@@ -45,7 +45,7 @@ site_configuration = {
         {
             "name": "GEOPM-reservation",
             "descr": "",
-            "hostnames": ["login-q-[0-4]+"],
+            "hostnames": ["login-q-1"],
             "modules_system": "tmod4",
             "partitions": [
                 make_partition("icelake", "", ICELAKE_PROC),
