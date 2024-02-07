@@ -151,7 +151,7 @@ class SPEChpc(rfm.RegressionTest):
         )
 
         time_values = values[:, 0]
-        power_values = values[:, 0]
+        power_values = values[:, 1]
 
         # todo: seemingly have to conver it to numpy array??
         self.time_series[f"BMC/{self.database_query_node_name}"] = [
