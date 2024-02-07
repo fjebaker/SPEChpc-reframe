@@ -31,12 +31,12 @@ def _benchmark_binary_name(benchmark_name: str) -> str:
     return os.path.join(".", benchmark_name.split(".")[1].split("_")[0])
 
 
-def _extract_perf_values(socket, key, file, group):
+def _extract_perf_values(socket, key, fd, group):
     return sn.extractall(
-        rf"(\S+)\s+S{socket}\s+\d+\s+(\S+) \w+ {key}",
-        file,
+        rf"(?P<time>\S+)\s+S{socket}\s+\d+\s+(?P<energy>\S+) \w+ {key}",
+        fd,
         group,
-        lambda x: float(x.replace(",", "_")),
+        float,
     )
 
 
@@ -126,8 +126,10 @@ class SPEChpc(rfm.RegressionTest):
 
         # todo: this could easily be a single query instead of two
         # if we hand roll the regex capture instead
-        all_time_measurements = _extract_perf_values(socket, key, self.stderr, 1)
-        all_energy_measurements = _extract_perf_values(socket, key, self.stderr, 2)
+        all_time_measurements = _extract_perf_values(socket, key, self.stderr, "time")
+        all_energy_measurements = _extract_perf_values(
+            socket, key, self.stderr, "energy"
+        )
 
         # save all measurements to the time series dictionary
         self.time_series[f"perf/{socket}/{key}"] = [
