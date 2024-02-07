@@ -1,5 +1,6 @@
 import logging
 import os
+import datetime
 
 import reframe as rfm
 import reframe.core.builtins as blt
@@ -45,6 +46,9 @@ class SPEChpc(rfm.RegressionTest):
 
     num_nodes = 1
 
+    database_query_start_date = variable(datetime.datetime, type(None), value=None)
+    database_query_end_date = variable(datetime.datetime, type(None), value=None)
+
     @blt.run_before("compile")
     def set_build_variables(self):
         self.num_tasks = self.current_partition.processor.num_cpus
@@ -68,6 +72,17 @@ class SPEChpc(rfm.RegressionTest):
         if not self.executable_opts:
             # read the executable args from the build directory
             self.executable_opts = self.build_system.read_executable_opts()
+
+        # for the database query, need a rough estimate of when to start query
+        self.database_query_start_date = harness.get_query_time(start=True)
+
+        # we also need to know about the machine we are running on
+        self.cluster_name = self.current_partition.name
+        self.node_name = self.current_system.hostnames[0]
+
+    @blt.run_after("run")
+    def set_database_end_time(self):
+        self.database_query_end_date = harness.get_query_time(start=False)
 
     @blt.performance_function("J")
     def extract_perf_energy_event(self, key=None, socket=0):
@@ -100,7 +115,12 @@ class SPEChpc(rfm.RegressionTest):
         }
 
         # get the pdu measurements
-        database_gather = harness.fetch_pdu_measurements("jobname", 1)
+        database_gather = harness.fetch_pdu_measurements(
+            self.database_query_start_date,
+            self.database_query_end_date,
+            self.cluster_name,
+            self.node_name,
+        )
 
         self.perf_variables = {
             **perf_events_gather,
