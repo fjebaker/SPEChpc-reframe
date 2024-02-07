@@ -46,7 +46,7 @@ def query_runtime(job):
 
     slurm_query = [
         "sacct",
-        "--format=start,end,elapsed",
+        "--format=jobid,start,end,elapsed",
         "--jobs=" + job.jobid,
         "--name=" + job.name,
     ]
