@@ -30,9 +30,6 @@ DATABASE_QUERY_ENABLED: bool = (
     else False
 )
 
-DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S"
-DATETIME_QUERY_DELTA = datetime.timedelta(seconds=30)
-
 STATUS_SUCCESS = "success"
 
 # tell the user what they've got configured
@@ -64,9 +61,7 @@ def _construct_pdu_query_node(cluster: str, nodename: str):
     )
 
 
-def _make_pdu_query(
-    start_date: datetime.datetime, end_date: datetime.datetime, cluster, nodename
-):
+def _make_pdu_query(start_date: str, end_date: str, cluster, nodename):
     query_string = _construct_pdu_query_node(cluster, nodename)
 
     headers = {
@@ -76,8 +71,8 @@ def _make_pdu_query(
 
     data = {
         "query": query_string,
-        "start": start_date.strftime(DATETIME_FORMAT),
-        "end": end_date.strftime(DATETIME_FORMAT),
+        "start": start_date,
+        "end": end_date,
         "step": "60s",
     }
 
@@ -97,16 +92,9 @@ def _make_pdu_query(
         return _digest_result(result)
 
 
-def get_query_time(start: bool = True) -> datetime.datetime:
-    if start:
-        return datetime.datetime.now() - DATETIME_QUERY_DELTA
-    else:
-        return datetime.datetime.now() + DATETIME_QUERY_DELTA
-
-
 def fetch_pdu_measurements(
-    start_time: datetime.datetime,
-    end_time: datetime.datetime,
+    start_time: str,
+    end_time: str,
     cluster: str,
     nodename: str,
 ) -> np.array:
