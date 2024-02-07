@@ -4,8 +4,8 @@ import datetime
 import json
 
 import requests
+import numpy as np
 
-import reframe.utility.sanity as sn
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +33,8 @@ DATABASE_QUERY_ENABLED: bool = (
 DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S"
 DATETIME_QUERY_DELTA = datetime.timedelta(seconds=30)
 
+STATUS_SUCCESS = "success"
+
 # tell the user what they've got configured
 
 if not DATABASE_QUERY_ENABLED:
@@ -43,6 +45,14 @@ if not DATABASE_QUERY_ENABLED:
 
 if SRFM_PROMETHEUS_DEBUG_ONLY:
     logger.warn("SRFM_PROMETHEUS_DEBUG_ONLY is set. Fetch query will not be performed.")
+
+
+def _digest_result(data: dict) -> np.array:
+    if data["status"] != STATUS_SUCCESS:
+        logger.error("Dabase returned status: %s", data["status"])
+        raise ValueError("Database query returned unsuccessful!")
+
+    return np.array(data["data"]["result"][0]["values"], dtype=np.float64)
 
 
 def _construct_pdu_query_node(cluster: str, nodename: str):
@@ -74,7 +84,7 @@ def _make_pdu_query(
     if SRFM_PROMETHEUS_DEBUG_ONLY:
         # todo: log to debug? but then have to mess with levels?
         logger.warn("request data: %s", json.dumps(data, indent=2))
-        return 0
+        return np.zeros((1, 2), dtype=np.float64)
     else:
         response = requests.post(
             f"http://{SRFM_PROMETHEUS_ADDRESS}/prometheus/api/v1/query",
@@ -83,8 +93,8 @@ def _make_pdu_query(
         )
 
         # todo: actually read out values here
-        _ = json.loads(response.content)
-        return 0
+        result = json.loads(response.content)
+        return _digest_result(result)
 
 
 def get_query_time(start: bool = True) -> datetime.datetime:
@@ -98,17 +108,14 @@ def fetch_pdu_measurements(
     start_time: datetime.datetime,
     end_time: datetime.datetime,
     cluster: str,
-    nodename: str | None,
-) -> dict:
-    if DATABASE_QUERY_ENABLED and nodename:
-        return {
-            f"Energy PDU {nodename}": sn.make_performance_function(
-                _make_pdu_query,
-                "J",
-                start_time,
-                end_time,
-                cluster,
-                nodename,
-            )
-        }
-    return {}
+    nodename: str,
+) -> np.array:
+    """
+    Units of the query are [['s', 'W'], ...]
+    """
+    return _make_pdu_query(
+        start_time,
+        end_time,
+        cluster,
+        nodename,
+    )

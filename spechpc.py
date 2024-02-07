@@ -6,6 +6,8 @@ import reframe as rfm
 import reframe.core.builtins as blt
 import reframe.utility.sanity as sn
 
+import numpy as np
+
 import harness
 
 logger = logging.getLogger(__name__)
@@ -29,6 +31,15 @@ def _benchmark_binary_name(benchmark_name: str) -> str:
     return os.path.join(".", benchmark_name.split(".")[1].split("_")[0])
 
 
+def _extract_perf_values(socket, key, file, group):
+    return sn.extractall(
+        rf"(\S+)\s+S{socket}\s+\d+\s+(\S+) \w+ {key}",
+        file,
+        group,
+        lambda x: float(x.replace(",", "_")),
+    )
+
+
 @rfm.simple_test
 class SPEChpc(rfm.RegressionTest):
 
@@ -37,6 +48,8 @@ class SPEChpc(rfm.RegressionTest):
 
     spechpc_benchmark = variable(str, value="635.weather_s")
     spechpc_dir = variable(str, type(None), value=None)
+
+    time_series = variable(dict, value={})
 
     # todo: this depends on the system. can we add it to the environ?
     perf_events = [
@@ -111,14 +124,41 @@ class SPEChpc(rfm.RegressionTest):
         if socket < 0:
             raise ValueError("`socket` cannot be negative")
 
-        all_measurements = sn.extractall(
-            rf"S{socket}\s+\d+\s+(\S+) \w+ {key}",
-            self.stderr,
-            1,
-            lambda x: float(x.replace(",", "_")),
+        # todo: this could easily be a single query instead of two
+        # if we hand roll the regex capture instead
+        all_time_measurements = _extract_perf_values(socket, key, self.stderr, 1)
+        all_energy_measurements = _extract_perf_values(socket, key, self.stderr, 2)
+
+        # save all measurements to the time series dictionary
+        self.time_series[f"perf/{socket}/{key}"] = [
+            all_time_measurements,
+            all_energy_measurements,
+        ]
+
+        # return the summed energy
+        return sum(all_energy_measurements)
+
+    @blt.performance_function("J")
+    def extract_database_readings(self):
+        # get the pdu measurements
+        values = harness.fetch_pdu_measurements(
+            self.database_query_start_date,
+            self.database_query_end_date,
+            self.partition_name,
+            self.database_query_node_name,
         )
 
-        return sum(all_measurements)
+        time_values = values[:, 0]
+        power_values = values[:, 0]
+
+        # todo: seemingly have to conver it to numpy array??
+        self.time_series[f"BMC/{self.database_query_node_name}"] = [
+            list(time_values),
+            list(power_values),
+        ]
+
+        # integrate under the power curve to get the total energy
+        return np.trapz(power_values, time_values)
 
     @blt.performance_function("s")
     def extract_core_time(self):
@@ -133,20 +173,18 @@ class SPEChpc(rfm.RegressionTest):
             for socket in range(self.current_partition.processor.num_sockets)
         }
 
-        # get the pdu measurements
-        database_gather = harness.fetch_pdu_measurements(
-            self.database_query_start_date,
-            self.database_query_end_date,
-            self.partition_name,
-            self.database_query_node_name,
-        )
-
         self.perf_variables = {
             **perf_events_gather,
-            **database_gather,
             # add other measurements that are always available
             "Core time": self.extract_core_time(),
         }
+
+        # if database is enabled, add that performance variable too
+        if harness.DATABASE_QUERY_ENABLED:
+            # board managment controller
+            self.perf_variables[f"BMC/{self.database_query_node_name}"] = (
+                self.extract_database_readings()
+            )
 
     @blt.sanity_function
     def assert_passed(self):
