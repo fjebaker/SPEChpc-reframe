@@ -90,10 +90,10 @@ def _make_pdu_query(
             f"http://{SRFM_PROMETHEUS_ADDRESS}/api/v1/query_range",
             headers=headers,
             data=data,
+            timeout=10,
         )
 
-        # todo: actually read out values here
-        result = json.loads(response.content)
+        result = json.loads(response.content.decode())
         return _digest_result(result)
 
 
