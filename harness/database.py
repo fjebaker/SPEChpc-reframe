@@ -45,11 +45,12 @@ if SRFM_PROMETHEUS_DEBUG_ONLY:
     logger.warn("SRFM_PROMETHEUS_DEBUG_ONLY is set. Fetch query will not be performed.")
 
 
-def _construct_pdu_query_node(cluster, nodename):
+def _construct_pdu_query_node(cluster: str, nodename: str):
     return (
         'amperageProbeReading{job="snmp_bmc", '
         'amperageProbeLocationName="System Board Pwr Consumption", '
-        'cluster="' + cluster + '", alias="' + nodename + '"}'
+        # cluster name is capitalized in the database, so we make sure it is here too
+        'cluster="' + cluster.title() + '", alias="' + nodename + '"}'
     )
 
 
