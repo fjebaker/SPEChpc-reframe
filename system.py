@@ -85,7 +85,7 @@ site_configuration = {
                     "cclake",
                     "",
                     CASCADE_LAKE_PROC,
-                    power_scaling_access("downclock-perf-testing-3", "cpu-r-[471,472]"),
+                    power_scaling_access("downclock-perf-testing-3", "cpu-p-[471,472]"),
                 ),
             ],
         },
