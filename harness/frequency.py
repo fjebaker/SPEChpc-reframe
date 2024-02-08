@@ -2,7 +2,7 @@ import reframe as rfm
 import reframe.core.builtins as blt
 import reframe.utility.sanity as sn
 
-F_MHZ = 1000  # hz
+F_MHZ = 1
 F_GHZ = 1000 * F_MHZ
 
 FREQUENCY_LOOKUP = {
