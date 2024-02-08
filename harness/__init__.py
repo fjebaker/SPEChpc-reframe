@@ -6,7 +6,7 @@ from harness.database import (
 )
 from harness.base import SPEChpcBase
 
-from harness.frequency import FrequencySweep
+from harness.frequency import FrequencySweepAll, FrequencySweepChosen
 
 
 class build_Weather_s(build_SPEChpc_benchmark_Base):
