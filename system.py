@@ -15,6 +15,13 @@ SAPPHIRE_RAPID_PROC = {
     "num_cpus_per_socket": 56,
 }
 
+CASCADE_LAKE_PROC = {
+    "num_cpus": 56,
+    "num_cpus_per_core": 1,
+    "num_sockets": 2,
+    "num_cpus_per_socket": 28,
+}
+
 
 def _make_access(account, reservation, nodelist):
     return [
@@ -73,6 +80,12 @@ site_configuration = {
                     "",
                     SAPPHIRE_RAPID_PROC,
                     power_scaling_access("downclock-perf-testing-2", "cpu-r-[3,4]"),
+                ),
+                make_partition(
+                    "cclake",
+                    "",
+                    CASCADE_LAKE_PROC,
+                    power_scaling_access("downclock-perf-testing-3", "cpu-r-[471,472]"),
                 ),
             ],
         },

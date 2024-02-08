@@ -54,6 +54,7 @@ def _digest_result(data: dict) -> np.array:
 
 CLUSTER_LOOKUP = {
     "sapphire": "Sapphire Rapid",
+    "cclake": "Cascade Lake",
 }
 
 
