@@ -35,6 +35,7 @@ class SPEChpcBuild(BuildSystem):
     spechpc_tune = variable(str, value="base")
     spechpc_flags = variable(typ.List[str], value=["--fake", "--loose"])
     spechpc_benchmark = variable(str)
+    partition_name = variable(str)
 
     """
     The absolute path of the stage directory. Must be set before the compile
@@ -110,18 +111,19 @@ class SPEChpcBuild(BuildSystem):
         return " ".join(cmd)
 
     def _create_benchmark_build_dir(self) -> str:
-        return os.path.join(
-            self.spechpc_dir, "benchspec", "HPC", self.spechpc_benchmark, "build"
-        )
+        return os.path.join("benchspec", "HPC", self.spechpc_benchmark, "build")
 
     def _setup_spechpc(self) -> typ.List[str]:
-        config_dir = os.path.join(self.spechpc_dir, "config")
+        # each partition gets its own SPEChpc directory to avoid
+        # concurrency issues
+        spechpc_src_dir = self.spechpc_dir + "_" + self.partition_name
+        config_dir = os.path.join(spechpc_src_dir, "config")
 
         return [
             # copy over the configuration
             f'cp "{self.spechpc_config}" "{config_dir}"',
             # change to the spechpc directory
-            f'cd "{self.spechpc_dir}"',
+            f'cd "{spechpc_src_dir}"',
             # source the requisite environment file
             "source shrc",
             # setup the build configuration
@@ -181,6 +183,7 @@ class build_SPEChpc_benchmark_Base(rfm.CompileOnlyRegressionTest):
         # so lets make sure that's known
         self.num_runtime_ranks = self.current_partition.processor.num_cpus
         self.build_system.spechpc_num_ranks = self.num_runtime_ranks
+        self.build_system.partition_name = self.current_partition.name
         self.build_system.executable = self.executable
         self.build_system.stagedir = self.stagedir
         self.build_system.spechpc_benchmark = self.spechpc_benchmark
