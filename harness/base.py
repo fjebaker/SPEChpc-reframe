@@ -19,6 +19,8 @@ class SPEChpcBase(rfm.RunOnlyRegressionTest):
 
     time_series = variable(dict, value={})
 
+    cooldown_seconds = variable(int, value=60)
+
     # some job configurations
     exclusive_access = True
     # arbitrarily chosen to be long enough that scheduler doesn't kill it
@@ -47,10 +49,18 @@ class SPEChpcBase(rfm.RunOnlyRegressionTest):
                 prefix=True,
             )
 
-        # fetch the executable from the fixture
         self.executable = self.spechpc_binary.executable
         self.prerun_cmds = [
+            # fetch the executable from the fixture
             f"cp {self.spechpc_binary.executable_path} {self.executable}"
+        ]
+
+        self.postrun_cmds = [
+            # after the run has finished and all measurements are made
+            # rest the node for a bit before the next job sweeps in so
+            # the database measurements are sane
+            f'echo "Sleeping for {self.cooldown_seconds} seconds"',
+            f"sleep {self.cooldown_seconds}s",
         ]
 
         if not self.executable_opts:
@@ -74,6 +84,11 @@ class SPEChpcBase(rfm.RunOnlyRegressionTest):
         if maybe_better_times:
             self.job_start_time = maybe_better_times[0]
             self.job_end_time = maybe_better_times[1]
+
+        # adjust the cooldown period in the recorded end time
+        self.job_end_time = utils.subtract_cooldown(
+            self.job_end_time, self.cooldown_seconds
+        )
 
         # after the run we ask the job where it ran
         if self.job.nodelist:
