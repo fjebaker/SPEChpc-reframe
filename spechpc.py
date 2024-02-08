@@ -10,8 +10,6 @@ logger = logging.getLogger(__name__)
 @rfm.simple_test
 class Weather_s(harness.SPEChpcBase, harness.FrequencySweep):
 
-    cpu_frequency = parameter([800, 900])  # mhz
-
     perf_events = [
         harness.PerfEvents.power.energy_cores,
         harness.PerfEvents.power.energy_pkg,

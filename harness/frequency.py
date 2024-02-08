@@ -60,16 +60,41 @@ FREQUENCY_LOOKUP = {
     "clusterlaine": [2.0 * F_GHZ, 1.0 * F_GHZ],
 }
 
+PARAMETER_CARDINALITY = max(len(v) for _, v in FREQUENCY_LOOKUP.items())
+
+
+def partition_frequencies(name: str):
+    fqs = FREQUENCY_LOOKUP.get(name, None)
+
+    if fqs:
+        return fqs
+
+    raise ValueError(f"No frequencies for requested parititon {name}")
+
 
 class FrequencySweep(rfm.RegressionMixin):
 
-    # derived must override this
-    cpu_frequency = parameter()
+    # hack: since parameters can't take specific values depending on partition
+    # we run over all possible frequency indexes for each partition
+    # and skip if the index is invalid
+    cpu_frequency_index = parameter(range(PARAMETER_CARDINALITY))
+    cpu_frequency = variable(float)
 
     def set_frequency_cmd(self) -> str:
         # todo: this is ridiculously unsafe and in an ideal world
         # the parameter would be sanitized but oh well !!!
-        return f"sudo cpupower frequency-set -f {self.cpu_frequency}mhz"
+        return f"echo 'sudo cpupower frequency-set -f {self.cpu_frequency}mhz'"
+
+    @blt.run_after("setup")
+    def get_frequency(self):
+        frequency_list = partition_frequencies(self.current_partition.name)
+
+        if self.cpu_frequency_index >= len(frequency_list):
+            self.skip(
+                msg=f"Parameter index is out of range ({self.cpu_frequency_index} >= {len(frequency_list)})"
+            )
+
+        self.cpu_frequency = frequency_list[self.cpu_frequency_index]
 
     @blt.run_before("run", always_last=True)
     def set_cpu_frequency(self):
