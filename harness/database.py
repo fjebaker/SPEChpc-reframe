@@ -51,9 +51,11 @@ def _digest_result(data: dict) -> np.array:
 
     return np.array(data["data"]["result"][0]["values"], dtype=np.float64)
 
+
 CLUSTER_LOOKUP = {
     "sapphire": "Sapphire Rapid",
 }
+
 
 def _construct_pdu_query_node(cluster: str, nodename: str):
     # cluster name is capitalized in the database, so we make sure it is here too

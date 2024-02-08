@@ -17,6 +17,12 @@ SPECHPC_ROOT_LOOKUP = {
 }
 
 
+def subtract_cooldown(s: str, cooldown: int) -> str:
+    date = datetime.datetime.strptime(s, DATETIME_FORMAT)
+    date = date - datetime.timedelta(seconds=cooldown)
+    return date.strftime(DATETIME_FORMAT)
+
+
 def lookup_spechpc_root_dir(cluster_name: str) -> str:
     return SPECHPC_ROOT_LOOKUP[cluster_name]
 
@@ -41,7 +47,9 @@ def extract_perf_values(socket, key, fd, group):
 def query_runtime(job):
     # check we have slurm
     if job.scheduler.registered_name != "slurm":
-        logger.info("Job does not use slurm. Cannot query better start / end time estimate.")
+        logger.info(
+            "Job does not use slurm. Cannot query better start / end time estimate."
+        )
         return None
 
     slurm_query = [
