@@ -148,8 +148,8 @@ class SPEChpcBase(rfm.RunOnlyRegressionTest):
         return np.trapz(power_values, time_values)
 
     @blt.performance_function("s")
-    def extract_core_time(self):
-        return sn.extractsingle(r"Core time:\s+(\S+)", self.spectimes_path, 1, float)
+    def extract_spechpc_time(self,key="Core time"):
+        return sn.extractsingle(rf"{key}:\s+(\S+)", self.spectimes_path, 1, float)
 
     @blt.run_before("performance")
     def set_performance_variables(self):
@@ -163,7 +163,8 @@ class SPEChpcBase(rfm.RunOnlyRegressionTest):
         self.perf_variables = {
             **perf_events_gather,
             # add other measurements that are always available
-            "Core time": self.extract_core_time(),
+            "Core time": self.extract_spechpc_time("Core time"),
+            "Total time": self.extract_spechpc_time("Total time"),
         }
 
         # if database is enabled, add that performance variable too
