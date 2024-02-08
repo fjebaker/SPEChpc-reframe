@@ -1,9 +1,12 @@
 import os
 import logging
 
+from harness.config import FREQUENCY_LOOKUP
+
 import reframe as rfm
 import reframe.core.builtins as blt
 import reframe.utility.sanity as sn
+
 
 logger = logging.getLogger(__name__)
 
@@ -13,63 +16,6 @@ FREQUENCY_SET_DEBUG = os.environ.get("SRFM_FREQUENCY_DEBUG", None) is not None
 if FREQUENCY_SET_DEBUG:
     logger.warn("FREQUENCY_SET_DEBUG is set. Will not attempt to set CPU frequencies.")
 
-F_MHZ = 1
-F_GHZ = 1000 * F_MHZ
-
-FREQUENCY_LOOKUP = {
-    "cclake": [
-        2.20 * F_GHZ,
-        2.20 * F_GHZ,
-        2.10 * F_GHZ,
-        2.00 * F_GHZ,
-        1.90 * F_GHZ,
-        1.80 * F_GHZ,
-        1.70 * F_GHZ,
-        1.60 * F_GHZ,
-        1.50 * F_GHZ,
-        1.40 * F_GHZ,
-        1.30 * F_GHZ,
-        1.20 * F_GHZ,
-        1.10 * F_GHZ,
-        1000 * F_MHZ,
-    ],
-    "sapphire": [
-        2.00 * F_GHZ,
-        2.00 * F_GHZ,
-        1.90 * F_GHZ,
-        1.80 * F_GHZ,
-        1.70 * F_GHZ,
-        1.60 * F_GHZ,
-        1.50 * F_GHZ,
-        1.40 * F_GHZ,
-        1.30 * F_GHZ,
-        1.20 * F_GHZ,
-        1.10 * F_GHZ,
-        1000 * F_MHZ,
-        900 * F_MHZ,
-        800 * F_MHZ,
-    ],
-    "icelake": [
-        2.60 * F_GHZ,
-        2.60 * F_GHZ,
-        2.50 * F_GHZ,
-        2.30 * F_GHZ,
-        2.20 * F_GHZ,
-        2.10 * F_GHZ,
-        2.00 * F_GHZ,
-        1.80 * F_GHZ,
-        1.70 * F_GHZ,
-        1.60 * F_GHZ,
-        1.40 * F_GHZ,
-        1.30 * F_GHZ,
-        1.20 * F_GHZ,
-        1.10 * F_GHZ,
-        900 * F_MHZ,
-        800 * F_MHZ,
-    ],
-    # fergus's test system
-    "clusterlaine": [2.0 * F_GHZ, 1.0 * F_GHZ],
-}
 
 PARAMETER_CARDINALITY = max(len(v) for _, v in FREQUENCY_LOOKUP.items())
 

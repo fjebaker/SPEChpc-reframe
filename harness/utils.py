@@ -3,6 +3,8 @@ import os
 import re
 import datetime
 
+from harness.config import SPECHPC_ROOT_LOOKUP
+
 import reframe.utility.osext as osext
 import reframe.utility.sanity as sn
 
@@ -10,11 +12,6 @@ logger = logging.getLogger(__name__)
 
 DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S"
 DATETIME_QUERY_DELTA = datetime.timedelta(seconds=5)
-
-SPECHPC_ROOT_LOOKUP = {
-    "personal": "/home/lilith/Developer/SPEChpc/hpc2021-1.1.7",
-    "csd3-power-scaling": "/rds/user/fb609/hpc-work/SPEChpc/hpc2021-1.1.7",
-}
 
 
 def subtract_cooldown(s: str, cooldown: int) -> str:
