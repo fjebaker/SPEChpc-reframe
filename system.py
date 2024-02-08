@@ -39,13 +39,13 @@ def geopm_access(reservation, nodelist):
     return _make_access("ZETTASCALE-ENERGY-SL2-CPU", reservation, nodelist)
 
 
-def make_partition(name, descr, proc, access):
+def make_partition(name, descr, proc, access, env_vars=[]):
     return {
         "name": name,
         "descr": descr,
         "scheduler": "slurm",
         "launcher": "mpirun",
-        "env_vars": [],
+        "env_vars": env_vars,
         "access": [
             "--partition=" + name,
             "--exclusive",
@@ -86,6 +86,7 @@ site_configuration = {
                     "",
                     CASCADE_LAKE_PROC,
                     power_scaling_access("downclock-perf-testing-3", "cpu-p-[471,472]"),
+                    env_vars=[["I_MPI_HYDRA_BOOTSTRAP", "ssh"]],
                 ),
             ],
         },
