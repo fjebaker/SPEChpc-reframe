@@ -4,8 +4,12 @@ import pathlib
 
 import reframe.utility.typecheck as typ
 
+import reframe as rfm
+import reframe.core.builtins as blt
 from reframe.core.buildsystems import BuildSystem
 from reframe.core.exceptions import BuildSystemError
+
+import harness.utils as utils
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +34,7 @@ class SPEChpcBuild(BuildSystem):
     spechpc_num_ranks = variable(int, type(None), value=None)
     spechpc_tune = variable(str, value="base")
     spechpc_flags = variable(typ.List[str], value=["--fake", "--loose"])
-    spechpc_benchmark = variable(str, value="635.weather_s")
+    spechpc_benchmark = variable(str)
 
     """
     The absolute path of the stage directory. Must be set before the compile
@@ -148,6 +152,47 @@ class SPEChpcBuild(BuildSystem):
             self.spechpc_config = self._generate_spechpc_config(environ)
 
         return self._setup_spechpc()
+
+
+class build_SPEChpc_benchmark_Base(rfm.CompileOnlyRegressionTest):
+
+    modules = ["rhel8/default-icl", "intel-oneapi-mkl/2022.1.0/intel/mngj3ad6"]
+
+    build_system = SPEChpcBuild()
+    sourcesdir = "../src/"
+
+    # must be set by downstream classes
+    spechpc_benchmark = variable(str)
+
+    spechpc_dir = variable(str, type(None), value=None)
+
+    @blt.run_before("compile")
+    def set_build_variables(self):
+        if not self.spechpc_dir:
+            self.spechpc_dir = utils.lookup_spechpc_root_dir(self.current_system.name)
+
+        # build the executable name from the chosen benchmark
+        self.executable = utils.benchmark_binary_name(self.spechpc_benchmark)
+
+        # build system needs some additional info that reframe doesnt pass by
+        # default
+        self.build_system.spechpc_dir = self.spechpc_dir
+        # apparently SPEChpc needs to know the ranks at compile time
+        # so lets make sure that's known
+        self.num_runtime_ranks = self.current_partition.processor.num_cpus
+        self.build_system.spechpc_num_ranks = self.num_runtime_ranks
+        self.build_system.executable = self.executable
+        self.build_system.stagedir = self.stagedir
+        self.build_system.spechpc_benchmark = self.spechpc_benchmark
+
+    @blt.sanity_function
+    def validate_build(self):
+        # todo: assert the binary has been copied into the stage directory
+        return True
+
+    @property
+    def executable_path(self):
+        return os.path.join(self.stagedir, self.executable)
 
     def read_executable_opts(self) -> typ.List[str]:
         """
