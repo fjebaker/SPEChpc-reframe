@@ -102,5 +102,3 @@ class FrequencySweep(rfm.RegressionMixin):
             self.prerun_cmds.append(self.set_frequency_cmd())
         else:
             self.prerun_cmds = [self.set_frequency_cmd()]
-
-        print(self.prerun_cmds)
