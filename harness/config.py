@@ -3,8 +3,8 @@ SPECHPC_ROOT_LOOKUP = {
     "csd3-power-scaling": "/rds/user/fb609/hpc-work/SPEChpc/hpc2021-1.1.7",
 }
 
-F_MHZ = 1
-F_GHZ = 1000 * F_MHZ
+F_MHZ = 1.0
+F_GHZ = 1000.0 * F_MHZ
 
 SAPPHIRE = "sapphire"
 ICELAKE = "icelake"
@@ -12,7 +12,6 @@ CASCADE_LAKE = "cclake"
 
 FREQUENCY_LOOKUP = {
     "cclake": [
-        2.20 * F_GHZ,
         2.20 * F_GHZ,
         2.10 * F_GHZ,
         2.00 * F_GHZ,
@@ -25,10 +24,9 @@ FREQUENCY_LOOKUP = {
         1.30 * F_GHZ,
         1.20 * F_GHZ,
         1.10 * F_GHZ,
-        1000 * F_MHZ,
+        1000.0 * F_MHZ,
     ],
     "sapphire": [
-        2.00 * F_GHZ,
         2.00 * F_GHZ,
         1.90 * F_GHZ,
         1.80 * F_GHZ,
@@ -39,12 +37,11 @@ FREQUENCY_LOOKUP = {
         1.30 * F_GHZ,
         1.20 * F_GHZ,
         1.10 * F_GHZ,
-        1000 * F_MHZ,
-        900 * F_MHZ,
-        800 * F_MHZ,
+        1000.0 * F_MHZ,
+        900.0 * F_MHZ,
+        800.0 * F_MHZ,
     ],
     "icelake": [
-        2.60 * F_GHZ,
         2.60 * F_GHZ,
         2.50 * F_GHZ,
         2.30 * F_GHZ,
@@ -58,8 +55,8 @@ FREQUENCY_LOOKUP = {
         1.30 * F_GHZ,
         1.20 * F_GHZ,
         1.10 * F_GHZ,
-        900 * F_MHZ,
-        800 * F_MHZ,
+        900.0 * F_MHZ,
+        800.0 * F_MHZ,
     ],
     # fergus's test system
     "clusterlaine": [2.0 * F_GHZ, 1.0 * F_GHZ],
