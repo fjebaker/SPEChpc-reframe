@@ -154,7 +154,7 @@ class SPEChpcBase(rfm.RunOnlyRegressionTest):
         return np.trapz(power_values, time_values)
 
     @blt.performance_function("s")
-    def extract_spechpc_time(self,key="Core time"):
+    def extract_spechpc_time(self, key="Core time"):
         return sn.extractsingle(rf"{key}:\s+(\S+)", self.spectimes_path, 1, float)
 
     @blt.run_before("performance")
