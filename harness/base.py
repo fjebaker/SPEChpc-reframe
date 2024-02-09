@@ -58,7 +58,7 @@ class SPEChpcBase(rfm.RunOnlyRegressionTest):
         # copy over possible additional files
         self.prerun_cmds += [
             f"cp {self.spechpc_binary.relpath(f)} {f}"
-            for f in self.spechpc_binary.alternative_inputs
+            for f in self.spechpc_binary.additional_inputs
         ]
 
         self.postrun_cmds = [

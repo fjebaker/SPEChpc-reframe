@@ -33,14 +33,18 @@ class build_Soma_t(build_SPEChpc_benchmark_Base):
 class build_Tealeaf_t(build_SPEChpc_benchmark_Base):
     spechpc_benchmark = "518.tealeaf_t"
     use_control_file = False
-    alternative_inputs = ["tea.in", "tea.problems"]
+    additional_inputs = ["tea.in", "tea.problems"]
 
 
 class build_Clvleaf_t(build_SPEChpc_benchmark_Base):
-    spechpc_benchmark = "519.clfleaf_t"
+    spechpc_benchmark = "519.clvleaf_t"
+    use_control_file = False
+    additional_inputs = ["clover.in"]
+
 
 class build_Pot3d_t(build_SPEChpc_benchmark_Base):
     spechpc_benchmark = "528.pot3d_t"
+    additional_inputs = ["pot3d1.dat", "br_input_small.h5"]
 
 
 class build_Sph_Exa_t(build_SPEChpc_benchmark_Base):

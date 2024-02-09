@@ -38,7 +38,7 @@ class SPEChpcBuild(BuildSystem):
     partition_name = variable(str)
 
     use_control_file: bool = True
-    alternative_inputs = None
+    additional_inputs = None
 
     """
     The absolute path of the stage directory. Must be set before the compile
@@ -151,10 +151,8 @@ class SPEChpcBuild(BuildSystem):
         if self.use_control_file:
             comp_step += [f'cp "{CONTORL_FILENAME}" "{self.stagedir}"']
 
-        if self.alternative_inputs:
-            comp_step += [
-                f'cp "{f}" "{self.stagedir}"' for f in self.alternative_inputs
-            ]
+        if self.additional_inputs:
+            comp_step += [f'cp "{f}" "{self.stagedir}"' for f in self.additional_inputs]
 
         comp_step += [
             # finally, return to staging dir
@@ -183,7 +181,7 @@ class build_SPEChpc_benchmark_Base(rfm.CompileOnlyRegressionTest):
     # must be set by downstream classes
     spechpc_benchmark = variable(str)
     spechpc_dir = variable(str, type(None), value=None)
-    alternative_inputs = variable(typ.List[str], value=[])
+    additional_inputs = variable(typ.List[str], value=[])
     use_control_file = variable(bool, value=True)
 
     @blt.run_before("compile")
@@ -205,7 +203,7 @@ class build_SPEChpc_benchmark_Base(rfm.CompileOnlyRegressionTest):
         self.build_system.executable = self.executable
         self.build_system.stagedir = self.stagedir
         self.build_system.spechpc_benchmark = self.spechpc_benchmark
-        self.build_system.alternative_inputs = self.alternative_inputs
+        self.build_system.additional_inputs = self.additional_inputs
         self.build_system.use_control_file = self.use_control_file
 
     @blt.sanity_function
