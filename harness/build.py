@@ -37,6 +37,9 @@ class SPEChpcBuild(BuildSystem):
     spechpc_benchmark = variable(str)
     partition_name = variable(str)
 
+    use_control_file: bool = True
+    alternative_inputs = None
+
     """
     The absolute path of the stage directory. Must be set before the compile
     step.
@@ -119,7 +122,7 @@ class SPEChpcBuild(BuildSystem):
         spechpc_src_dir = self.spechpc_dir + "_" + self.partition_name
         config_dir = os.path.join(spechpc_src_dir, "config")
 
-        return [
+        comp_step = [
             # copy over the configuration
             f'cp "{self.spechpc_config}" "{config_dir}"',
             # change to the spechpc directory
@@ -141,10 +144,24 @@ class SPEChpcBuild(BuildSystem):
             f'cp "{self.executable}" "{self.stagedir}"',
             # copy the command specification back
             f'cd "../../run/run_{self.spechpc_tune}_ref_intel_mpi.$RUNID"',
-            f'cp "{CONTORL_FILENAME}" "{self.stagedir}"',
+        ]
+
+        # some benchmarks don't actually have control files, so we need to
+        # specify alternatives
+        if self.use_control_file:
+            comp_step += [f'cp "{CONTORL_FILENAME}" "{self.stagedir}"']
+
+        if self.alternative_inputs:
+            comp_step += [
+                f'cp "{f}" "{self.stagedir}"' for f in self.alternative_inputs
+            ]
+
+        comp_step += [
             # finally, return to staging dir
             f'cd "{self.stagedir}"',
         ]
+
+        return comp_step
 
     def emit_build_commands(self, environ):
         self._check_preconditions()
@@ -165,8 +182,9 @@ class build_SPEChpc_benchmark_Base(rfm.CompileOnlyRegressionTest):
 
     # must be set by downstream classes
     spechpc_benchmark = variable(str)
-
     spechpc_dir = variable(str, type(None), value=None)
+    alternative_inputs = variable(typ.List[str], value=[])
+    use_control_file = variable(bool, value=True)
 
     @blt.run_before("compile")
     def set_build_variables(self):
@@ -187,6 +205,8 @@ class build_SPEChpc_benchmark_Base(rfm.CompileOnlyRegressionTest):
         self.build_system.executable = self.executable
         self.build_system.stagedir = self.stagedir
         self.build_system.spechpc_benchmark = self.spechpc_benchmark
+        self.build_system.alternative_inputs = self.alternative_inputs
+        self.build_system.use_control_file = self.use_control_file
 
     @blt.sanity_function
     def validate_build(self):
@@ -195,13 +215,20 @@ class build_SPEChpc_benchmark_Base(rfm.CompileOnlyRegressionTest):
 
     @property
     def executable_path(self):
-        return os.path.join(self.stagedir, self.executable)
+        return self.relpath(self.executable)
+
+    def relpath(self, path):
+        return os.path.join(self.stagedir, path)
 
     def read_executable_opts(self) -> typ.List[str]:
         """
         Reads the executable's default arguments from the SPEChpc generated
         control file.
         """
+        if not self.use_control_file:
+            # no arguments
+            return []
+
         cmdpath = os.path.join(self.stagedir, CONTORL_FILENAME)
         logger.debug("Reading SPEChpc benchmark arguments from file: %s", cmdpath)
         return pathlib.Path(cmdpath).read_text().split()

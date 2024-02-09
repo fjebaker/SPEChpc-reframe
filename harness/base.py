@@ -55,6 +55,12 @@ class SPEChpcBase(rfm.RunOnlyRegressionTest):
             f"cp {self.spechpc_binary.executable_path} {self.executable}"
         ]
 
+        # copy over possible additional files
+        self.prerun_cmds += [
+            f"cp {self.spechpc_binary.relpath(f)} {f}"
+            for f in self.spechpc_binary.alternative_inputs
+        ]
+
         self.postrun_cmds = [
             # after the run has finished and all measurements are made
             # rest the node for a bit before the next job sweeps in so
