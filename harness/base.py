@@ -3,6 +3,7 @@ import logging
 import reframe as rfm
 import reframe.core.builtins as blt
 import reframe.utility.sanity as sn
+import reframe.utility.typecheck as typ
 
 import numpy as np
 
@@ -33,7 +34,7 @@ class SPEChpcBase(rfm.RunOnlyRegressionTest):
     # database specifics
     job_start_time = variable(str, type(None), value=None)
     job_end_time = variable(str, type(None), value=None)
-    database_query_node_name = variable(str, type(None), value=None)
+    database_query_node_names = variable(typ.List[str], type(None), value=None)
 
     @blt.run_before("run")
     def wrap_perf_events(self):
@@ -99,7 +100,7 @@ class SPEChpcBase(rfm.RunOnlyRegressionTest):
         # after the run we ask the job where it ran
         if self.job.nodelist:
             logger.debug("Nodelist for job %s: %s", self.job.jobid, self.job.nodelist)
-            self.database_query_node_name = self.job.nodelist[0]
+            self.database_query_node_names = self.job.nodelist
         else:
             logger.warn("No nodelists set by scheduler. Cannot query database")
 
@@ -132,20 +133,23 @@ class SPEChpcBase(rfm.RunOnlyRegressionTest):
         return sum(all_energy_measurements)
 
     @blt.performance_function("J")
-    def extract_database_readings(self):
+    def extract_database_readings(self, nodename=None):
+        if not nodename:
+            raise ValueError("`nodename` must be defined")
+
         # get the pdu measurements
         values = harness.fetch_pdu_measurements(
             self.job_start_time,
             self.job_end_time,
             self.partition_name,
-            self.database_query_node_name,
+            nodename,
         )
 
         time_values = values[:, 0]
         power_values = values[:, 1]
 
         # todo: seemingly have to conver it to numpy array??
-        self.time_series[f"BMC/{self.database_query_node_name}"] = [
+        self.time_series[f"BMC/{nodename}"] = [
             list(time_values),
             list(power_values),
         ]
@@ -176,9 +180,10 @@ class SPEChpcBase(rfm.RunOnlyRegressionTest):
         # if database is enabled, add that performance variable too
         if harness.DATABASE_QUERY_ENABLED:
             # board managment controller
-            self.perf_variables[f"BMC/{self.database_query_node_name}"] = (
-                self.extract_database_readings()
-            )
+            for nodename in self.database_query_node_names:
+                self.perf_variables[f"BMC/{nodename}"] = self.extract_database_readings(
+                    nodename
+                )
 
     @blt.sanity_function
     def assert_passed(self):
