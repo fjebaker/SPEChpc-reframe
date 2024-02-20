@@ -134,7 +134,7 @@ class SPEChpcBuild(BuildSystem):
             # cd to the chosen benchmark directory
             f'cd "{self._create_benchmark_build_dir()}"',
             # a little bit of cheek to get into the right directory
-            'BUILD_DIR="$(ls -d * | sort -n | head -n 1)"',
+            'BUILD_DIR="$(ls -d *.* | sort -n | head -n 1)"',
             'cd "$BUILD_DIR"',
             # save the identifier for later
             "RUNID=$(basename $(pwd) | cut -d. -f2)",
