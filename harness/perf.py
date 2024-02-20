@@ -112,4 +112,6 @@ class PerfLauncherWrapper(JobLauncher):
             # todo: same kind of thing but about Intel MPI flags
             return [
                 "srun hostname > hostfile",
+                "sort hostfile | uniq > hostfile_unique",
+                "mv hostfile_unique hostfile",
             ]
