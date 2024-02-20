@@ -71,6 +71,7 @@ class FrequencySweepChosen(FrequencyBase):
     # must be overriden by subclass
     cpu_frequency = parameter()
 
+
 class FrequencyCPUGovenor(rfm.RegressionMixin):
     cpu_govenor = variable(str, value="powersave")
 

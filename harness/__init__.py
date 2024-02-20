@@ -6,7 +6,11 @@ from harness.database import (
 )
 from harness.base import SPEChpcBase
 
-from harness.frequency import FrequencySweepAll, FrequencySweepChosen, FrequencyCPUGovenor
+from harness.frequency import (
+    FrequencySweepAll,
+    FrequencySweepChosen,
+    FrequencyCPUGovenor,
+)
 
 # small
 
