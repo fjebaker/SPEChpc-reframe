@@ -183,6 +183,7 @@ class build_SPEChpc_benchmark_Base(rfm.CompileOnlyRegressionTest):
     spechpc_dir = variable(str, type(None), value=None)
     additional_inputs = variable(typ.List[str], value=[])
     use_control_file = variable(bool, value=True)
+    spechpc_num_nodes = variable(int, value=1)
 
     @blt.run_before("compile")
     def set_build_variables(self):
@@ -197,7 +198,10 @@ class build_SPEChpc_benchmark_Base(rfm.CompileOnlyRegressionTest):
         self.build_system.spechpc_dir = self.spechpc_dir
         # apparently SPEChpc needs to know the ranks at compile time
         # so lets make sure that's known
-        self.num_runtime_ranks = self.current_partition.processor.num_cpus
+        # TODO: currently assume the ranks are fully allocated across the nodes
+        self.num_runtime_ranks = (
+            self.current_partition.processor.num_cpus * self.spechpc_num_nodes
+        )
         self.build_system.spechpc_num_ranks = self.num_runtime_ranks
         self.build_system.partition_name = self.current_partition.name
         self.build_system.executable = self.executable
