@@ -19,7 +19,9 @@ MS_PER_SECOND = 1000
 def _line_of_file(line, filename) -> str:
     return f'sed "{line}q;d" {filename}'
 
+
 MPI_TASK_SEPERATOR = ":\\\n    "
+
 
 class PerfLauncherWrapper(JobLauncher):
     """
@@ -81,9 +83,9 @@ class PerfLauncherWrapper(JobLauncher):
 
             # save the `-np` arg so we can paste it on at the end
             i = root.index("-np")
-            np_arg = root[i:i+2]
+            np_arg = root[i : i + 2]
             # remove the `-np`
-            root = root[0:i] + root[i+2:]
+            root = root[0:i] + root[i + 2 :]
 
             # append some output ordering so we can work out which host does what
             # todo: these flags are MPI implementation specific and currently
