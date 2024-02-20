@@ -111,7 +111,7 @@ class SPEChpcBase(rfm.RunOnlyRegressionTest):
             logger.warn("No nodelists set by scheduler. Cannot query database")
 
     @blt.performance_function("J")
-    def extract_perf_energy_event(self, key=None, socket=0):
+    def extract_perf_energy_event(self, key=None, socket=0, host_index=None):
         if not key:
             raise ValueError("`key` has no value")
 
@@ -120,15 +120,22 @@ class SPEChpcBase(rfm.RunOnlyRegressionTest):
 
         # todo: this could easily be a single query instead of two
         # if we hand roll the regex capture instead
-        all_time_measurements = utils.extract_perf_values(
-            socket, key, self.stderr, "time"
+        all_time_measurements = utils.extract_perf_values_for_host(
+            socket, key, self.stderr, "time", host_index
         )
-        all_energy_measurements = utils.extract_perf_values(
-            socket, key, self.stderr, "energy"
+        all_energy_measurements = utils.extract_perf_values_for_host(
+            socket, key, self.stderr, "energy", host_index
         )
 
+        time_series_key = f"perf/{socket}/{key}"
+
+        # use the host name if it's a mutli-node job
+        if not host_index is None:
+            name = self.database_query_node_names[host_index]
+            time_series_key = f"perf/{name}/{socket}/{key}"
+
         # save all measurements to the time series dictionary
-        self.time_series[f"perf/{socket}/{key}"] = [
+        self.time_series[time_series_key] = [
             # explicitly call list, as the `_extract_perf_values` returns
             # reframe deferrables
             list(all_time_measurements),
@@ -169,14 +176,21 @@ class SPEChpcBase(rfm.RunOnlyRegressionTest):
 
     @blt.run_before("performance")
     def set_performance_variables(self):
-        # build the selected perf events dictionary
-        # TODO(multi-node): this needs to loop over all of the nodes' output
-        # to check: does reframe aggregate? how do we tell them appart if it does?
-        perf_events_gather = {
-            f"{socket}/{k}": self.extract_perf_energy_event(k, socket)
-            for k in self.perf_events
-            for socket in range(self.current_partition.processor.num_sockets)
-        }
+        # build the selected perf events dictionary depending on the number of nodes
+        if self.num_nodes == 1:
+            perf_events_gather = {
+                f"/{socket}/{k}": self.extract_perf_energy_event(k, socket)
+                for k in self.perf_events
+                for socket in range(self.current_partition.processor.num_sockets)
+            }
+        else:
+            # for multi-node jobs, need to extract a perf value for each node
+            perf_events_gather = {
+                f"/{host}/{socket}/{k}": self.extract_perf_energy_event(k, socket, i)
+                for k in self.perf_events
+                for socket in range(self.current_partition.processor.num_sockets)
+                for (i, host) in enumerate(self.database_query_node_names)
+            }
 
         self.perf_variables = {
             **perf_events_gather,

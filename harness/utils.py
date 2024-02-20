@@ -32,9 +32,15 @@ def benchmark_binary_name(benchmark_name: str) -> str:
     return os.path.join(".", benchmark_name.split(".")[1].split("_")[0])
 
 
-def extract_perf_values(socket, key, fd, group):
+def extract_perf_values_for_host(socket, key, fd, group, host_index):
+    query = rf"(?P<time>\S+)\s+S{socket}\s+\d+\s+(?P<energy>\S+) \w+ {key}"
+
+    # if looking for hostname index then prepend it
+    if not host_index is None:
+        query = rf"\[{host_index}\]\s+" + query
+
     return sn.extractall(
-        rf"(?P<time>\S+)\s+S{socket}\s+\d+\s+(?P<energy>\S+) \w+ {key}",
+        query,
         fd,
         group,
         float,
