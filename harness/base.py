@@ -37,23 +37,15 @@ class SPEChpcBase(rfm.RunOnlyRegressionTest):
     database_query_node_names = variable(typ.List[str], type(None), value=None)
 
     @blt.run_before("run")
-    def wrap_perf_events(self):
+    def configure_pre_post_commands(self):
         # learn things about the partition we're running on
-        self.num_tasks = self.spechpc_binary.num_runtime_ranks
+        self.num_tasks = self.spechpc_binary.num_runtime_ranks * self.num_nodes
         self.partition_name = self.current_partition.name
-
-        # use the perf wrapper only if we're measuring perf events
-        if self.perf_events:
-            self.job.launcher = harness.PerfLauncherWrapper(
-                self.job.launcher,
-                self.perf_events,
-                prefix=True,
-            )
 
         self.executable = self.spechpc_binary.executable
         self.prerun_cmds = [
             # fetch the executable from the fixture
-            f"cp {self.spechpc_binary.executable_path} {self.executable}"
+            f"cp {self.spechpc_binary.executable_path} {self.executable}",
         ]
 
         # copy over possible additional files
@@ -80,6 +72,20 @@ class SPEChpcBase(rfm.RunOnlyRegressionTest):
         # todo: there must be a better / more idiomatic way to do this
         # i would have thought reframe would have done this automatically
         self.job.options.append(f"--nodes={self.num_nodes}")
+
+    @blt.run_before("run", always_last=True)
+    def wrap_perf_launcher(self):
+        # use the perf wrapper only if we're measuring perf events
+        if self.perf_events:
+            self.job.launcher = harness.PerfLauncherWrapper(
+                self.job.launcher,
+                self.perf_events,
+                self.executable,
+                self.executable_opts,
+                self.num_nodes,
+            )
+            # get any additional pre-run commands
+            self.prerun_cmds += self.job.launcher.additional_prerun_cmds()
 
     @blt.run_after("run")
     def set_database_end_time(self):
@@ -164,6 +170,8 @@ class SPEChpcBase(rfm.RunOnlyRegressionTest):
     @blt.run_before("performance")
     def set_performance_variables(self):
         # build the selected perf events dictionary
+        # TODO(multi-node): this needs to loop over all of the nodes' output
+        # to check: does reframe aggregate? how do we tell them appart if it does?
         perf_events_gather = {
             f"{socket}/{k}": self.extract_perf_energy_event(k, socket)
             for k in self.perf_events
