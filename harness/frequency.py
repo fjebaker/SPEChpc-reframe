@@ -68,6 +68,17 @@ class FrequencySweepAll(FrequencyBase):
 
 
 class FrequencySweepChosen(FrequencyBase):
-
     # must be overriden by subclass
     cpu_frequency = parameter()
+
+class FrequencyCPUGovenor(rfm.RegressionMixin):
+    cpu_govenor = variable(str, value="powersave")
+
+    @blt.run_before("run", always_last=True)
+    def set_cpu_frequency(self):
+        cmd = f"sudo cpupower frequency-set -g {self.cpu_govenor}"
+
+        if self.prerun_cmds:
+            self.prerun_cmds.append(cmd)
+        else:
+            self.prerun_cmds = [cmd]
