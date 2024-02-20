@@ -85,6 +85,11 @@ class PerfLauncherWrapper(JobLauncher):
             # remove the `-np`
             root = root[0:i] + root[i+2:]
 
+            # append some output ordering so we can work out which host does what
+            # todo: these flags are MPI implementation specific and currently
+            # these only work for Intel MPI
+            root += ["-l", "-ordered-output"]
+
             for i in range(self.num_runtime_nodes):
                 sed_cmd = _line_of_file(i + 1, "hostfile")
                 perf_task = ["--host", f"$({sed_cmd})", "-n", "1"]
@@ -102,4 +107,7 @@ class PerfLauncherWrapper(JobLauncher):
         else:
             # todo: this only works if slurm is the backing launcher. if it
             # ever runs under a different scheduler, will need to modify
-            return ["srun hostname > hostfile"]
+            # todo: same kind of thing but about Intel MPI flags
+            return [
+                "srun hostname > hostfile",
+            ]
