@@ -233,4 +233,13 @@ class build_SPEChpc_benchmark_Base(rfm.CompileOnlyRegressionTest):
 
         cmdpath = os.path.join(self.stagedir, CONTORL_FILENAME)
         logger.debug("Reading SPEChpc benchmark arguments from file: %s", cmdpath)
-        return pathlib.Path(cmdpath).read_text().split()
+
+        exec_opts = pathlib.Path(cmdpath).read_text().split()
+        # some of the benchmarks include comments in their default
+        # arguments, so here we just trim at the first comment to make this work
+        if "#" in exec_opts:
+            logger.debug("Trimming comments from executable arguments")
+            exec_opts = exec_opts[0 : exec_opts.index("#")]
+
+        logger.debug("Arguments read: %s", exec_opts)
+        return exec_opts
