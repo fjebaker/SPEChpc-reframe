@@ -39,7 +39,7 @@ class SPEChpcBase(rfm.RunOnlyRegressionTest):
     @blt.run_before("run")
     def configure_pre_post_commands(self):
         # learn things about the partition we're running on
-        self.num_tasks = self.spechpc_binary.num_runtime_ranks * self.num_nodes
+        self.num_tasks = self.spechpc_binary.num_runtime_ranks
         self.partition_name = self.current_partition.name
 
         self.executable = self.spechpc_binary.executable
