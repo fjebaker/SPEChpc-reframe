@@ -24,6 +24,7 @@ class build_Weather_t(build_SPEChpc_benchmark_Base):
 
 class build_Lbm_t(build_SPEChpc_benchmark_Base):
     spechpc_benchmark = "505.lbm_t"
+    additional_inputs = ["control"]
 
 
 class build_Soma_t(build_SPEChpc_benchmark_Base):
