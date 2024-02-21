@@ -79,6 +79,11 @@ class FrequencyCPUGovenor(rfm.RegressionMixin):
     def set_cpu_frequency(self):
         cmd = f"sudo cpupower frequency-set -g {self.cpu_govenor}"
 
+        # for multi-nodes, need to make sure it gets run on each node
+        if self.num_nodes > 1:
+            prefix = f"srun --ntasks-per-node=1 -n{self.num_nodes} -N(self.num_nodes)"
+            cmd = prefix + " " + cmd
+
         if self.prerun_cmds:
             self.prerun_cmds.append(cmd)
         else:
