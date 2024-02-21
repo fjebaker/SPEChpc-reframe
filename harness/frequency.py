@@ -30,10 +30,21 @@ def partition_frequencies(name: str):
 
 
 class FrequencyBase(rfm.RegressionMixin):
-    def set_frequency_cmd(self) -> str:
+
+    def frequency_cmd(self) -> str:
         # todo: this is ridiculously unsafe and in an ideal world
         # the parameter would be sanitized but oh well !!!
         cmd = f"sudo cpupower frequency-set -f {self.cpu_frequency}mhz"
+        return cmd
+
+    def _construct_cmd(self) -> str:
+        cmd = self.frequency_cmd()
+
+        # for multi-nodes, need to make sure it gets run on each node
+        if self.num_nodes > 1:
+            prefix = f"srun --ntasks-per-node=1 -n{self.num_nodes} -N{self.num_nodes}"
+            cmd = prefix + " " + cmd
+
         if FREQUENCY_SET_DEBUG:
             return f'echo "{cmd}"'
         else:
@@ -42,9 +53,9 @@ class FrequencyBase(rfm.RegressionMixin):
     @blt.run_before("run", always_last=True)
     def set_cpu_frequency(self):
         if self.prerun_cmds:
-            self.prerun_cmds.append(self.set_frequency_cmd())
+            self.prerun_cmds.append(self._construct_cmd())
         else:
-            self.prerun_cmds = [self.set_frequency_cmd()]
+            self.prerun_cmds = [self._construct_cmd()]
 
 
 class FrequencySweepAll(FrequencyBase):
@@ -72,19 +83,11 @@ class FrequencySweepChosen(FrequencyBase):
     cpu_frequency = parameter()
 
 
-class FrequencyCPUGovenor(rfm.RegressionMixin):
+class FrequencyCPUGovenor(FrequencyBase):
     cpu_govenor = variable(str, value="powersave")
 
-    @blt.run_before("run", always_last=True)
-    def set_cpu_frequency(self):
+    def frequency_cmd(self) -> str:
+        # todo: this is ridiculously unsafe and in an ideal world
+        # the parameter would be sanitized but oh well !!!
         cmd = f"sudo cpupower frequency-set -g {self.cpu_govenor}"
-
-        # for multi-nodes, need to make sure it gets run on each node
-        if self.num_nodes > 1:
-            prefix = f"srun --ntasks-per-node=1 -n{self.num_nodes} -N(self.num_nodes)"
-            cmd = prefix + " " + cmd
-
-        if self.prerun_cmds:
-            self.prerun_cmds.append(cmd)
-        else:
-            self.prerun_cmds = [cmd]
+        return cmd
