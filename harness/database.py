@@ -1,11 +1,15 @@
 import os
 import logging
-import datetime
 import json
 
 import requests
 import numpy as np
 
+import reframe as rfm
+import reframe.core.builtins as blt
+import reframe.utility.typecheck as typ
+
+import harness.utils as utils
 
 logger = logging.getLogger(__name__)
 
@@ -115,3 +119,92 @@ def fetch_pdu_measurements(
         cluster,
         nodename,
     )
+
+
+class BMCInstrument(rfm.RegressionMixin):
+
+    # database specifics
+    job_start_time = variable(str, type(None), value=None)
+    job_end_time = variable(str, type(None), value=None)
+    database_query_node_names = variable(typ.List[str], type(None), value=None)
+
+    cooldown_seconds = variable(int, value=60)
+
+    @blt.run_before("run", always_last=True)
+    def _bmc_instrument_post_command(self):
+        postrun_cmds = [
+            # after the run has finished and all measurements are made
+            # rest the node for a bit before the next job sweeps in so
+            # the database measurements are sane
+            f'echo "Sleeping for {self.cooldown_seconds} seconds"',
+            f"sleep {self.cooldown_seconds}s",
+        ]
+
+        if self.postrun_cmds:
+            self.postrun_cmds += postrun_cmds
+        else:
+            self.postrun_cmds = postrun_cmds
+
+    @blt.run_after("run", always_last=True)
+    def _bmc_instrument_scheduler_times(self):
+        # for the database query, need a rough estimate of when to start query
+        self.job_end_time = utils.time_now(False)
+
+        # can we get a better estimate from the scheduler?
+        maybe_better_times = utils.query_runtime(self.job)
+        if maybe_better_times:
+            self.job_start_time = maybe_better_times[0]
+            self.job_end_time = maybe_better_times[1]
+
+        # adjust the cooldown period in the recorded end time
+        self.job_end_time = utils.subtract_cooldown(
+            self.job_end_time, self.cooldown_seconds
+        )
+
+        # after the run we ask the job where it ran
+        if self.job.nodelist:
+            logger.debug("Nodelist for job %s: %s", self.job.jobid, self.job.nodelist)
+            self.database_query_node_names = self.job.nodelist
+        else:
+            logger.warn("No nodelists set by scheduler. Cannot query database")
+
+    @blt.performance_function("J")
+    def _bmc_instrument_extract_database_readings(self, nodename=None):
+        if not nodename:
+            raise ValueError("`nodename` must be defined")
+
+        # get the pdu measurements
+        values = fetch_pdu_measurements(
+            self.job_start_time,
+            self.job_end_time,
+            self.partition_name,
+            nodename,
+        )
+
+        time_values = values[:, 0]
+        power_values = values[:, 1]
+
+        self.time_series[f"BMC/{nodename}"] = [
+            list(time_values),
+            list(power_values),
+        ]
+
+        # integrate under the power curve to get the total energy
+        return np.trapz(power_values, time_values)
+
+    @blt.run_before("performance", always_last=True)
+    def _bmc_instrument_set_performance_variables(self):
+        logger.debug("Nodelist for database query: %s", self.database_query_node_names)
+
+        # if database is enabled, add those performance variables too
+        if DATABASE_QUERY_ENABLED:
+            bmc_variables = {}
+            for nodename in self.database_query_node_names:
+                bmc_variables[f"BMC/{nodename}"] = (
+                    self._bmc_instrument_extract_database_readings(nodename)
+                )
+
+            if self.perf_variables:
+                self.perf_variables = {**self.perf_variables, **bmc_variables}
+            else:
+                self.perf_variables = bmc_variables

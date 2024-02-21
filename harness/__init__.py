@@ -3,6 +3,7 @@ from harness.perf import PerfEvents, PerfInstrument
 from harness.database import (
     fetch_pdu_measurements,
     DATABASE_QUERY_ENABLED,
+    BMCInstrument,
 )
 from harness.base import SPEChpcBase
 
