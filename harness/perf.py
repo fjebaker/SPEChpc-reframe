@@ -110,8 +110,8 @@ class PerfLauncherWrapper(JobLauncher):
             # todo: this only works if slurm is the backing launcher. if it
             # ever runs under a different scheduler, will need to modify
             # todo: same kind of thing but about Intel MPI flags
+
+            num_nodes = self.num_runtime_nodes
             return [
-                "srun hostname > hostfile",
-                "sort hostfile | uniq > hostfile_unique",
-                "mv hostfile_unique hostfile",
+                f"srun --ntasks-per-node=1 -n{num_nodes} -N{num_nodes} hostname > hostfile",
             ]
