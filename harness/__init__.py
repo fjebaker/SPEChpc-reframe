@@ -1,5 +1,5 @@
 from harness.build import SPEChpcBuild, build_SPEChpc_benchmark_Base
-from harness.perf import PerfLauncherWrapper, PerfEvents
+from harness.perf import PerfEvents, PerfInstrument
 from harness.database import (
     fetch_pdu_measurements,
     DATABASE_QUERY_ENABLED,

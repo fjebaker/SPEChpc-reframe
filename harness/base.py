@@ -73,20 +73,6 @@ class SPEChpcBase(rfm.RunOnlyRegressionTest):
         # i would have thought reframe would have done this automatically
         self.job.options.append(f"--nodes={self.num_nodes}")
 
-    @blt.run_before("run", always_last=True)
-    def wrap_perf_launcher(self):
-        # use the perf wrapper only if we're measuring perf events
-        if self.perf_events:
-            self.job.launcher = harness.PerfLauncherWrapper(
-                self.job.launcher,
-                self.perf_events,
-                self.executable,
-                self.executable_opts,
-                self.num_nodes,
-            )
-            # get any additional pre-run commands
-            self.prerun_cmds += self.job.launcher.additional_prerun_cmds()
-
     @blt.run_after("run")
     def set_database_end_time(self):
         # for the database query, need a rough estimate of when to start query
@@ -109,41 +95,6 @@ class SPEChpcBase(rfm.RunOnlyRegressionTest):
             self.database_query_node_names = self.job.nodelist
         else:
             logger.warn("No nodelists set by scheduler. Cannot query database")
-
-    @blt.performance_function("J")
-    def extract_perf_energy_event(self, key=None, socket=0, host_index=None):
-        if not key:
-            raise ValueError("`key` has no value")
-
-        if socket < 0:
-            raise ValueError("`socket` cannot be negative")
-
-        # todo: this could easily be a single query instead of two
-        # if we hand roll the regex capture instead
-        all_time_measurements = utils.extract_perf_values_for_host(
-            socket, key, self.stderr, "time", host_index
-        )
-        all_energy_measurements = utils.extract_perf_values_for_host(
-            socket, key, self.stderr, "energy", host_index
-        )
-
-        time_series_key = f"perf/{socket}/{key}"
-
-        # use the host name if it's a mutli-node job
-        if not host_index is None:
-            name = self.database_query_node_names[host_index]
-            time_series_key = f"perf/{name}/{socket}/{key}"
-
-        # save all measurements to the time series dictionary
-        self.time_series[time_series_key] = [
-            # explicitly call list, as the `_extract_perf_values` returns
-            # reframe deferrables
-            list(all_time_measurements),
-            list(all_energy_measurements),
-        ]
-
-        # return the summed energy
-        return sum(all_energy_measurements)
 
     @blt.performance_function("J")
     def extract_database_readings(self, nodename=None):
@@ -176,25 +127,8 @@ class SPEChpcBase(rfm.RunOnlyRegressionTest):
 
     @blt.run_before("performance")
     def set_performance_variables(self):
-        # build the selected perf events dictionary depending on the number of nodes
-        if self.num_nodes == 1:
-            perf_events_gather = {
-                f"/{socket}/{k}": self.extract_perf_energy_event(k, socket)
-                for k in self.perf_events
-                for socket in range(self.current_partition.processor.num_sockets)
-            }
-        else:
-            # for multi-node jobs, need to extract a perf value for each node
-            perf_events_gather = {
-                f"/{host}/{socket}/{k}": self.extract_perf_energy_event(k, socket, i)
-                for k in self.perf_events
-                for socket in range(self.current_partition.processor.num_sockets)
-                for (i, host) in enumerate(self.database_query_node_names)
-            }
-
         self.perf_variables = {
-            **perf_events_gather,
-            # add other measurements that are always available
+            # add measurements that are always available
             "Core time": self.extract_spechpc_time("Core time"),
             "Total time": self.extract_spechpc_time("Total time"),
         }
