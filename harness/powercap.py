@@ -31,11 +31,20 @@ def partition_powercaps(name: str):
 
 class PowercapBase(rfm.RegressionMixin):
 
-    def powercap_cmd(self) -> str:
+    racadm_path = "/opt/dell/srvadmin/sbin/racadm"
+
+    def powercap_cmd(self) -> list:
         # todo: this is ridiculously unsafe and in an ideal world
         # the parameter would be sanitized but oh well !!!
-        cmd = f"sudo racadm set system.power.cap.watts {self.powercap_value}"
-        return cmd
+        cmds = [
+            f"sudo {self.racadm_path} set system.power.cap.watts {self.powercap_value}",
+            # write the configured value to a file
+            f"sudo {self.racadm_path} get system.power.cap.watts > powercap_value",
+            # then we validate to make sure the cap worked
+            f'if [ $(head -n1 powercap_value | cut -d\' \' -f1) != "{self.powercap_value}" ]; then echo "Powercap mismatch" && exit 1; fi',
+        ]
+
+        return cmds
 
     def _construct_powercap_cmd(self) -> str:
         cmd = self.powercap_cmd()
@@ -44,9 +53,9 @@ class PowercapBase(rfm.RegressionMixin):
     @blt.run_before("run", always_last=True)
     def set_powercap_value(self):
         if self.prerun_cmds:
-            self.prerun_cmds.append(self._construct_powercap_cmd())
+            self.prerun_cmds += self._construct_powercap_cmd()
         else:
-            self.prerun_cmds = [self._construct_powercap_cmd()]
+            self.prerun_cmds = self._construct_powercap_cmd()
 
 
 class PowercapSweepAll(PowercapBase):

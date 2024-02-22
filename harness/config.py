@@ -76,9 +76,9 @@ def _powersteps(high, low, interval=50) -> list:
 
 POWERCAP_LOOKUP = {
     # all units in watts
-    "icelake": _powersteps(800, 500),
-    "cclake": _powersteps(500, 200),
-    "sapphire": _powersteps(1200, 500),
+    "icelake": _powersteps(650, 250),
+    "cclake": _powersteps(350, 150),
+    "sapphire": _powersteps(1200, 550),
     # fergus's test system
     "clusterlaine": [1, 2],
 }
