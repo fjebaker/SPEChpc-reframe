@@ -13,6 +13,8 @@ from harness.frequency import (
     FrequencyCPUGovenor,
 )
 
+from harness.powercap import PowercapSweepAll
+
 # small
 
 

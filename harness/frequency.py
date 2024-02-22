@@ -5,16 +5,15 @@ from harness.config import FREQUENCY_LOOKUP
 
 import reframe as rfm
 import reframe.core.builtins as blt
-import reframe.utility.sanity as sn
 
 
 logger = logging.getLogger(__name__)
 
 
-FREQUENCY_SET_DEBUG = os.environ.get("SRFM_FREQUENCY_DEBUG", None) is not None
+FREQUENCY_SET_DEBUG = os.environ.get("SRFM_NODE_SETUP_DEBUG", None) is not None
 
 if FREQUENCY_SET_DEBUG:
-    logger.warn("FREQUENCY_SET_DEBUG is set. Will not attempt to set CPU frequencies.")
+    logger.warn("SRFM_NODE_SETUP_DEBUG is set. Will not attempt to set CPU frequencies.")
 
 
 PARAMETER_CARDINALITY = max(len(v) for _, v in FREQUENCY_LOOKUP.items())
