@@ -123,7 +123,7 @@ def time_now(start: bool = True) -> str:
     return format_date(date)
 
 
-def multiplex_for_each_node(cmd, num_nodes, debug) -> str:
+def _multiplex_for_each_node(cmd: str, num_nodes, debug) -> str:
     # for multi-nodes, need to make sure it gets run on each node
     # todo: only works with slurm
     if num_nodes > 1:
@@ -134,3 +134,10 @@ def multiplex_for_each_node(cmd, num_nodes, debug) -> str:
         return "echo " + cmd
     else:
         return cmd
+
+
+def multiplex_for_each_node(cmd, num_nodes, debug):
+    if type(cmd) is list:
+        return [_multiplex_for_each_node(c, num_nodes, debug) for c in cmd]
+    else:
+        return _multiplex_for_each_node(cmd, num_nodes, debug)
