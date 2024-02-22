@@ -38,6 +38,8 @@ class PowercapBase(rfm.RegressionMixin):
         # the parameter would be sanitized but oh well !!!
         cmds = [
             f"sudo {self.racadm_path} set system.power.cap.watts {self.powercap_value}",
+            # give idrac a change to update
+            "sleep 5",
             # write the configured value to a file
             f"sudo {self.racadm_path} get system.power.cap.watts > powercap_value",
             # then we validate to make sure the cap worked
