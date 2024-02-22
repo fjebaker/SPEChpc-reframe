@@ -121,3 +121,16 @@ def time_now(start: bool = True) -> str:
         date = date + DATETIME_QUERY_DELTA
 
     return format_date(date)
+
+
+def multiplex_for_each_node(cmd, num_nodes, debug) -> str:
+    # for multi-nodes, need to make sure it gets run on each node
+    # todo: only works with slurm
+    if num_nodes > 1:
+        prefix = f"srun --ntasks-per-node=1 -n{num_nodes} -N{num_nodes}"
+        cmd = prefix + " " + cmd
+
+    if debug:
+        return "echo " + cmd
+    else:
+        return cmd

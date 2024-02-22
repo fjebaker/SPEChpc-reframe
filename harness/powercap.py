@@ -2,6 +2,7 @@ import os
 import logging
 
 from harness.config import POWERCAP_LOOKUP
+import harness.utils as utils
 
 import reframe as rfm
 import reframe.core.builtins as blt
@@ -33,28 +34,19 @@ class PowercapBase(rfm.RegressionMixin):
     def powercap_cmd(self) -> str:
         # todo: this is ridiculously unsafe and in an ideal world
         # the parameter would be sanitized but oh well !!!
-        cmd = f"sudo cpupower frequency-set -f {self.powercap_value}mhz"
+        cmd = f"sudo racadm set system.power.cap.watts {self.powercap_value}"
         return cmd
 
-    def _construct_cmd(self) -> str:
+    def _construct_powercap_cmd(self) -> str:
         cmd = self.powercap_cmd()
-
-        # for multi-nodes, need to make sure it gets run on each node
-        if self.num_nodes > 1:
-            prefix = f"srun --ntasks-per-node=1 -n{self.num_nodes} -N{self.num_nodes}"
-            cmd = prefix + " " + cmd
-
-        if POWERCAP_SET_DEBUG:
-            return f'echo "{cmd}"'
-        else:
-            return cmd
+        return utils.multiplex_for_each_node(cmd, self.num_nodes, POWERCAP_SET_DEBUG)
 
     @blt.run_before("run", always_last=True)
     def set_powercap_value(self):
         if self.prerun_cmds:
-            self.prerun_cmds.append(self._construct_cmd())
+            self.prerun_cmds.append(self._construct_powercap_cmd())
         else:
-            self.prerun_cmds = [self._construct_cmd()]
+            self.prerun_cmds = [self._construct_powercap_cmd()]
 
 
 class PowercapSweepAll(PowercapBase):

@@ -2,6 +2,7 @@ import os
 import logging
 
 from harness.config import FREQUENCY_LOOKUP
+import harness.utils as utils
 
 import reframe as rfm
 import reframe.core.builtins as blt
@@ -13,7 +14,9 @@ logger = logging.getLogger(__name__)
 FREQUENCY_SET_DEBUG = os.environ.get("SRFM_NODE_SETUP_DEBUG", None) is not None
 
 if FREQUENCY_SET_DEBUG:
-    logger.warn("SRFM_NODE_SETUP_DEBUG is set. Will not attempt to set CPU frequencies.")
+    logger.warn(
+        "SRFM_NODE_SETUP_DEBUG is set. Will not attempt to set CPU frequencies."
+    )
 
 
 PARAMETER_CARDINALITY = max(len(v) for _, v in FREQUENCY_LOOKUP.items())
@@ -36,25 +39,16 @@ class FrequencyBase(rfm.RegressionMixin):
         cmd = f"sudo cpupower frequency-set -f {self.cpu_frequency}mhz"
         return cmd
 
-    def _construct_cmd(self) -> str:
+    def _construct_freq_cmd(self) -> str:
         cmd = self.frequency_cmd()
-
-        # for multi-nodes, need to make sure it gets run on each node
-        if self.num_nodes > 1:
-            prefix = f"srun --ntasks-per-node=1 -n{self.num_nodes} -N{self.num_nodes}"
-            cmd = prefix + " " + cmd
-
-        if FREQUENCY_SET_DEBUG:
-            return f'echo "{cmd}"'
-        else:
-            return cmd
+        return utils.multiplex_for_each_node(cmd, self.num_nodes, FREQUENCY_SET_DEBUG)
 
     @blt.run_before("run", always_last=True)
     def set_cpu_frequency(self):
         if self.prerun_cmds:
-            self.prerun_cmds.append(self._construct_cmd())
+            self.prerun_cmds.append(self._construct_freq_cmd())
         else:
-            self.prerun_cmds = [self._construct_cmd()]
+            self.prerun_cmds = [self._construct_freq_cmd()]
 
 
 class FrequencySweepAll(FrequencyBase):
