@@ -132,7 +132,7 @@ class PerfInstrument(rfm.RegressionMixin):
                 "self.executable must be set before the PerfInstrument wrapper is invoked!"
             )
 
-        if not self.executable_opts:
+        if (not self.executable_opts) and (not type(self.executable_opts) is list):
             raise ValueError(
                 "self.executable_opts must be set before the PerfInstrument wrapper is invoked!"
             )
