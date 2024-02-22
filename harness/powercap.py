@@ -42,9 +42,13 @@ class PowercapBase(rfm.RegressionMixin):
             "sleep 5",
             # write the configured value to a file
             f"sudo {self.racadm_path} get system.power.cap.watts > powercap_value",
-            # then we validate to make sure the cap worked
-            f'if [ $(head -n1 powercap_value | cut -d\' \' -f1) != "{self.powercap_value}" ]; then echo "Powercap mismatch" && exit 1; fi',
         ]
+
+        if not POWERCAP_SET_DEBUG:
+            # then we validate to make sure the cap worked
+            cmds.append(
+                f'if [ $(head -n1 powercap_value | cut -d\' \' -f1) != "{self.powercap_value}" ]; then echo "Powercap mismatch" && exit 1; fi'
+            )
 
         return cmds
 
@@ -66,7 +70,7 @@ class PowercapSweepAll(PowercapBase):
     # we run over all possible frequency indexes for each partition
     # and skip if the index is invalid
     powercap_index = parameter(range(PARAMETER_CARDINALITY))
-    powercap_value = variable(float)
+    powercap_value = variable(int)
 
     @blt.run_after("setup")
     def get_powercap(self):
@@ -77,4 +81,4 @@ class PowercapSweepAll(PowercapBase):
                 msg=f"Parameter index is out of range ({self.powercap_index} >= {len(powercap_list)})"
             )
 
-        self.cpu_frequency = powercap_list[self.powercap_index]
+        self.powercap_value = powercap_list[self.powercap_index]
