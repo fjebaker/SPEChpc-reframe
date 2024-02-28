@@ -1,6 +1,17 @@
-from reframe.core.launchers import JobLauncher
+import logging
 
 import reframe.utility.typecheck as typ
+import reframe.core.builtins as blt
+import reframe as rfm
+
+from reframe.core.launchers import JobLauncher
+
+import harness.utils as utils
+
+MS_PER_SECOND = 1000
+MPI_TASK_SEPERATOR = ": \\\n    "
+
+logger = logging.getLogger(__name__)
 
 
 class _Power:
@@ -13,14 +24,8 @@ class PerfEvents:
     power = _Power()
 
 
-MS_PER_SECOND = 1000
-
-
 def _line_of_file(line, filename) -> str:
     return f'sed "{line}q;d" {filename}'
-
-
-MPI_TASK_SEPERATOR = ":\\\n    "
 
 
 class PerfLauncherWrapper(JobLauncher):
@@ -115,3 +120,116 @@ class PerfLauncherWrapper(JobLauncher):
             return [
                 f"srun --ntasks-per-node=1 -n{num_nodes} -N{num_nodes} hostname > hostfile",
             ]
+
+
+class PerfInstrument(rfm.RegressionMixin):
+    perf_events = variable(typ.List[str], value=[])
+
+    # prefix all names with _perf_instrument_* to avoid namespace collisions
+    def _perf_instrument_check_preconditions(self):
+        if not self.executable:
+            raise ValueError(
+                "self.executable must be set before the PerfInstrument wrapper is invoked!"
+            )
+
+        if (not self.executable_opts) and (not type(self.executable_opts) is list):
+            raise ValueError(
+                "self.executable_opts must be set before the PerfInstrument wrapper is invoked!"
+            )
+
+        if not self.num_nodes:
+            raise ValueError(
+                "self.num_nodes must be set before the PerfInstrument wrapper is invoked!"
+            )
+
+        logger.info("Preconditions passed")
+
+    @blt.run_before("run", always_last=True)
+    def _perf_instrument_wrap_perf_launcher(self):
+        self._perf_instrument_check_preconditions()
+
+        logger.debug("perf events selected %s", self.perf_events)
+
+        # use the perf wrapper only if we're measuring perf events
+        if self.perf_events:
+            self.job.launcher = PerfLauncherWrapper(
+                self.job.launcher,
+                self.perf_events,
+                self.executable,
+                self.executable_opts,
+                self.num_nodes,
+            )
+            # get any additional pre-run commands
+            self.prerun_cmds += self.job.launcher.additional_prerun_cmds()
+
+    @blt.performance_function("J")
+    def _perf_instrument_extract_perf_energy_event(
+        self, key=None, socket=0, host_index=None
+    ):
+        if not key:
+            raise ValueError("`key` has no value")
+
+        if socket < 0:
+            raise ValueError("`socket` cannot be negative")
+
+        # todo: this could easily be a single query instead of two
+        # if we hand roll the regex capture instead
+        all_time_measurements = utils.extract_perf_values_for_host(
+            socket, key, self.stderr, "time", host_index
+        )
+        all_energy_measurements = utils.extract_perf_values_for_host(
+            socket, key, self.stderr, "energy", host_index
+        )
+
+        time_series_key = f"perf/{socket}/{key}"
+
+        # use the host name if it's a mutli-node job
+        if not host_index is None:
+            node_name = self.job.nodelist[host_index]
+            time_series_key = f"perf/{node_name}/{socket}/{key}"
+
+        # save all measurements to the time series dictionary
+        self.time_series[time_series_key] = [
+            # explicitly call list, as the extraction functions return reframe
+            # deferrables
+            list(all_time_measurements),
+            list(all_energy_measurements),
+        ]
+
+        # return the summed energy
+        return sum(all_energy_measurements)
+
+    @blt.run_before("performance", always_last=True)
+    def _perf_instrument_set_variables(self):
+        # build the selected perf events dictionary depending on the number of nodes
+        if self.num_nodes == 1:
+            perf_events_gather = {
+                f"/{socket}/{k}": self._perf_instrument_extract_perf_energy_event(
+                    k, socket
+                )
+                for k in self.perf_events
+                for socket in range(self.current_partition.processor.num_sockets)
+            }
+        else:
+            # for multi-node jobs, need to extract a perf value for each node
+            perf_events_gather = {
+                f"/{host}/{socket}/{k}": self._perf_instrument_extract_perf_energy_event(
+                    k, socket, i, host
+                )
+                for k in self.perf_events
+                for socket in range(self.current_partition.processor.num_sockets)
+                for (i, host) in enumerate(self.job.nodelist)
+            }
+
+        logger.debug(
+            "Perf events to be gathered: %s",
+            [k for (k, v) in perf_events_gather.items()],
+        )
+
+        if self.perf_variables:
+            self.perf_variables = {
+                **perf_events_gather,
+                **self.perf_variables,
+            }
+        else:
+            self.perf_variables = perf_events_gather

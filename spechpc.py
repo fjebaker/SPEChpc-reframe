@@ -12,6 +12,11 @@ logger = logging.getLogger(__name__)
 
 
 class SetupPerfEvents(rfm.RegressionMixin):
+    """
+    Helper mixin that selects the available perf events depending on the
+    partition the job is being run on.
+    """
+
     @blt.run_after("setup")
     def set_perf_events(self):
         partition_name = self.current_partition.name
@@ -33,58 +38,111 @@ class SetupPerfEvents(rfm.RegressionMixin):
             ]
 
 
-@rfm.simple_test
-class Lbm_t(harness.SPEChpcBase, harness.FrequencySweepAll, SetupPerfEvents):
-    num_nodes = 1
-    spechpc_binary = fixture(harness.build_Lbm_t, scope="environment")
+class BenchmarkBase(
+    harness.SPEChpcBase,
+    harness.PerfInstrument,
+    harness.BMCInstrument,
+    harness.FrequencySweepAll,
+    SetupPerfEvents,
+): ...
 
 
 @rfm.simple_test
-class Soma_t(harness.SPEChpcBase, harness.FrequencySweepAll, SetupPerfEvents):
+class Lbm_t(BenchmarkBase):
     num_nodes = 1
-    spechpc_binary = fixture(harness.build_Soma_t, scope="environment")
+    spechpc_binary = fixture(
+        harness.build_Lbm_t,
+        scope="environment",
+        variables={"spechpc_num_nodes": num_nodes},
+    )
+
+
+@rfm.simple_test
+class Soma_t(BenchmarkBase):
+    num_nodes = 1
+    spechpc_binary = fixture(
+        harness.build_Soma_t,
+        scope="environment",
+        variables={"spechpc_num_nodes": num_nodes},
+    )
     # using these fixtures to ensure the build process is serial between tests
-    dag_build = fixture(harness.build_Lbm_t, scope="environment")
+    dag_build = fixture(
+        harness.build_Lbm_t,
+        scope="environment",
+        variables={"spechpc_num_nodes": num_nodes},
+    )
 
 
 @rfm.simple_test
-class Tealeaf_t(harness.SPEChpcBase, harness.FrequencySweepAll, SetupPerfEvents):
+class Tealeaf_t(BenchmarkBase):
     num_nodes = 1
-    spechpc_binary = fixture(harness.build_Tealeaf_t, scope="environment")
-    dag_build = fixture(harness.build_Soma_t, scope="environment")
+    spechpc_binary = fixture(
+        harness.build_Tealeaf_t,
+        scope="environment",
+        variables={"spechpc_num_nodes": num_nodes},
+    )
+    dag_build = fixture(
+        harness.build_Soma_t,
+        scope="environment",
+        variables={"spechpc_num_nodes": num_nodes},
+    )
 
 
 @rfm.simple_test
-class Clvleaf_t(harness.SPEChpcBase, harness.FrequencySweepAll, SetupPerfEvents):
+class Clvleaf_t(BenchmarkBase):
     num_nodes = 1
-    spechpc_binary = fixture(harness.build_Clvleaf_t, scope="environment")
-    dag_build = fixture(harness.build_Tealeaf_t, scope="environment")
+    spechpc_binary = fixture(
+        harness.build_Clvleaf_t,
+        scope="environment",
+        variables={"spechpc_num_nodes": num_nodes},
+    )
+    dag_build = fixture(
+        harness.build_Tealeaf_t,
+        scope="environment",
+        variables={"spechpc_num_nodes": num_nodes},
+    )
 
 
 @rfm.simple_test
-class Pot3d_t(harness.SPEChpcBase, harness.FrequencySweepAll, SetupPerfEvents):
+class Pot3d_t(BenchmarkBase):
     num_nodes = 1
-    spechpc_binary = fixture(harness.build_Pot3d_t, scope="environment")
-    dag_build = fixture(harness.build_Clvleaf_t, scope="environment")
+    spechpc_binary = fixture(
+        harness.build_Pot3d_t,
+        scope="environment",
+        variables={"spechpc_num_nodes": num_nodes},
+    )
+    dag_build = fixture(
+        harness.build_Clvleaf_t,
+        scope="environment",
+        variables={"spechpc_num_nodes": num_nodes},
+    )
 
 
 @rfm.simple_test
-class Hpgmgfv_Exa_t(harness.SPEChpcBase, harness.FrequencySweepAll, SetupPerfEvents):
+class Hpgmgfv_Exa_t(BenchmarkBase):
     num_nodes = 1
-    spechpc_binary = fixture(harness.build_Hpgmgfv_Exa_t, scope="environment")
-    dag_build = fixture(harness.build_Pot3d_t, scope="environment")
+    spechpc_binary = fixture(
+        harness.build_Hpgmgfv_Exa_t,
+        scope="environment",
+        variables={"spechpc_num_nodes": num_nodes},
+    )
+    dag_build = fixture(
+        harness.build_Pot3d_t,
+        scope="environment",
+        variables={"spechpc_num_nodes": num_nodes},
+    )
 
 
 @rfm.simple_test
-class Weather_t(harness.SPEChpcBase, harness.FrequencySweepAll, SetupPerfEvents):
+class Weather_t(BenchmarkBase):
     num_nodes = 1
-    spechpc_binary = fixture(harness.build_Weather_t, scope="environment")
-    dag_build = fixture(harness.build_Hpgmgfv_Exa_t, scope="environment")
-
-
-# can't seem to compile?
-# @rfm.simple_test
-# class Sph_Exa_t(harness.SPEChpcBase, harness.FrequencySweepAll, SetupPerfEvents):
-#     num_nodes = 1
-#     spechpc_binary = fixture(harness.build_Sph_Exa_t, scope="environment")
-#     dag_build = fixture(harness.build_Pot3d_t, scope="environment")
+    spechpc_binary = fixture(
+        harness.build_Weather_t,
+        scope="environment",
+        variables={"spechpc_num_nodes": num_nodes},
+    )
+    dag_build = fixture(
+        harness.build_Hpgmgfv_Exa_t,
+        scope="environment",
+        variables={"spechpc_num_nodes": num_nodes},
+    )

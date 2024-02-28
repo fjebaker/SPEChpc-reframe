@@ -176,7 +176,7 @@ class build_SPEChpc_benchmark_Base(rfm.CompileOnlyRegressionTest):
     modules = ["rhel8/default-icl", "intel-oneapi-mkl/2022.1.0/intel/mngj3ad6"]
 
     build_system = SPEChpcBuild()
-    sourcesdir = "../src/"
+    sourcesdir = "../support/"
 
     # must be set by downstream classes
     spechpc_benchmark = variable(str)

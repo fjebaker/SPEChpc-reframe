@@ -14,6 +14,14 @@ DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S"
 DATETIME_QUERY_DELTA = datetime.timedelta(seconds=5)
 
 
+SPECHPC_DIR_PATH = os.environ.get("SRFM_SPECHPC_ROOT_DIR", None)
+
+if not SPECHPC_DIR_PATH:
+    logger.warn(
+        "SRFM_SPECHPC_ROOT_DIR is not set. Will read SPEChpc from built-in configuration file if required."
+    )
+
+
 def subtract_cooldown(s: str, cooldown: int) -> str:
     date = datetime.datetime.strptime(s, DATETIME_FORMAT)
     date = date - datetime.timedelta(seconds=cooldown)
@@ -21,7 +29,17 @@ def subtract_cooldown(s: str, cooldown: int) -> str:
 
 
 def lookup_spechpc_root_dir(cluster_name: str) -> str:
-    return SPECHPC_ROOT_LOOKUP[cluster_name]
+    dir_path = SPECHPC_DIR_PATH
+
+    if not dir_path:
+        dir_path = SPECHPC_ROOT_LOOKUP[cluster_name]
+
+    # trim trailing forward slash
+    if dir_path[-1] == "/":
+        dir_path = dir_path[0:-1]
+
+    logger.debug("SPEChpc root directory: %s", dir_path)
+    return dir_path
 
 
 def benchmark_binary_name(benchmark_name: str) -> str:
@@ -103,3 +121,23 @@ def time_now(start: bool = True) -> str:
         date = date + DATETIME_QUERY_DELTA
 
     return format_date(date)
+
+
+def _multiplex_for_each_node(cmd: str, num_nodes, debug) -> str:
+    # for multi-nodes, need to make sure it gets run on each node
+    # todo: only works with slurm
+    if num_nodes > 1:
+        prefix = f"srun --ntasks-per-node=1 -n{num_nodes} -N{num_nodes}"
+        cmd = prefix + " " + cmd
+
+    if debug:
+        return "echo " + cmd
+    else:
+        return cmd
+
+
+def multiplex_for_each_node(cmd, num_nodes, debug):
+    if type(cmd) is list:
+        return [_multiplex_for_each_node(c, num_nodes, debug) for c in cmd]
+    else:
+        return _multiplex_for_each_node(cmd, num_nodes, debug)

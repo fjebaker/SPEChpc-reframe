@@ -61,3 +61,24 @@ FREQUENCY_LOOKUP = {
     # fergus's test system
     "clusterlaine": [2.0 * F_GHZ, 1.0 * F_GHZ],
 }
+
+
+def _powersteps(high, low, interval=50) -> list:
+    items = []
+
+    current = high
+    while current >= low:
+        items.append(current)
+        current = current - interval
+
+    return items
+
+
+POWERCAP_LOOKUP = {
+    # all units in watts
+    "icelake": _powersteps(650, 250),
+    "cclake": _powersteps(350, 150),
+    "sapphire": _powersteps(1200, 550),
+    # fergus's test system
+    "clusterlaine": [1, 2],
+}
